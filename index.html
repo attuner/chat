@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WhatsApp">
-    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/192px-WhatsApp.svg.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
 
     <style>
         :root {
@@ -353,7 +353,6 @@
             opacity: 0.85;
         }
 
-        /* Chat Messages Box */
         .msg-box {
             flex: 1 1 auto;
             min-height: 0;
@@ -386,11 +385,6 @@
             background: var(--wa-bubble-in);
         }
 
-        .deleted-text {
-            font-style: italic;
-            color: #8696a0;
-        }
-
         .msg-meta {
             display: inline-flex;
             align-items: center;
@@ -403,20 +397,6 @@
             transform: translateY(3px);
         }
 
-        .ticks {
-            font-weight: bold;
-            font-size: 12px;
-        }
-
-        .ticks.read {
-            color: var(--wa-tick-blue);
-        }
-
-        .ticks.sent {
-            color: var(--wa-tick-gray);
-        }
-
-        /* Media and Attachments */
         .media-container {
             position: relative;
             display: block;
@@ -521,17 +501,6 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-        }
-
-        .reaction-badge {
-            position: absolute;
-            bottom: -8px;
-            right: 8px;
-            background: white;
-            border-radius: 10px;
-            padding: 1px 4px;
-            font-size: 12px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         /* Footer Controls */
@@ -660,53 +629,6 @@
             justify-content: center;
         }
 
-        /* Context Sheet */
-        .action-sheet {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.4);
-            display: none;
-            align-items: flex-end;
-            z-index: 99;
-        }
-
-        .action-sheet-body {
-            width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 16px 16px 0 0;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .reaction-bar {
-            display: flex;
-            justify-content: space-around;
-            font-size: 24px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .reaction-bar span {
-            cursor: pointer;
-        }
-
-        .sheet-btn {
-            padding: 12px;
-            background: none;
-            border: none;
-            font-size: 16px;
-            text-align: left;
-            cursor: pointer;
-        }
-
-        .sheet-btn.danger {
-            color: #ea4335;
-        }
-
         /* Full Screen Preview Modal */
         .preview-modal {
             position: fixed;
@@ -796,14 +718,14 @@
             </div>
         </div>
 
-        <!-- 2. Contacts / Conversation Directory -->
+        <!-- 2. Contacts / Directory View -->
         <div id="directoryScreen">
             <div class="directory-header">
                 <div class="current-user-card">
                     <div class="current-user-avatar" id="dirUserAvatar">U</div>
                     <div>
                         <div class="current-user-name" id="dirUserName">User</div>
-                        <div class="current-user-tag">Online Account</div>
+                        <div class="current-user-tag">Local Device Storage</div>
                     </div>
                 </div>
                 <div class="header-actions">
@@ -845,7 +767,7 @@
                         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                     </div>
                     <span>Document</span>
-                    <input type="file" hidden id="docUpload" onchange="uploadDirectFile(event, 'document')" />
+                    <input type="file" hidden id="docUpload" onchange="handleLocalFileSelect(event, 'document')" />
                 </label>
                 <label class="attach-btn">
                     <div class="attach-icon" style="background: #d3396d;">
@@ -853,7 +775,7 @@
                     </div>
                     <span>Camera</span>
                     <input type="file" accept="image/*" capture="environment" hidden id="cameraUpload"
-                        onchange="uploadDirectFile(event, 'image')" />
+                        onchange="handleLocalFileSelect(event, 'image')" />
                 </label>
                 <label class="attach-btn">
                     <div class="attach-icon" style="background: #c32aa3;">
@@ -861,7 +783,7 @@
                     </div>
                     <span>Gallery</span>
                     <input type="file" accept="image/*,video/*" hidden id="galleryUpload"
-                        onchange="uploadDirectFile(event, 'media')" />
+                        onchange="handleLocalFileSelect(event, 'media')" />
                 </label>
             </div>
 
@@ -906,31 +828,16 @@
             </div>
             <div class="preview-content" id="previewMediaContainer"></div>
         </div>
-
-        <!-- Context Action Overlay -->
-        <div class="action-sheet" id="actionSheet" onclick="closeActionSheet(event)">
-            <div class="action-sheet-body" onclick="event.stopPropagation()">
-                <div class="reaction-bar">
-                    <span onclick="applyReaction('👍')">👍</span>
-                    <span onclick="applyReaction('❤️')">❤️</span>
-                    <span onclick="applyReaction('😂')">😂</span>
-                    <span onclick="applyReaction('😮')">😮</span>
-                    <span onclick="applyReaction('😢')">😢</span>
-                    <span onclick="applyReaction('🙏')">🙏</span>
-                </div>
-                <button class="sheet-btn danger" id="deleteForEveryoneBtn" onclick="executeDeleteForEveryone()">Delete for everyone</button>
-            </div>
-        </div>
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwi7CRlik0BvLpxp72RwLrNcpCRsJvLiJ-8LVCDjNxLZtIEANBnoI_Qz48LfEoy9avX/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxRvNV9QzRgbiDnLiiWXA239FWFX7DHFuegeywfxp8umHeCHz2djfSKAIUdEU1iJ_NN/exec";
         let currentUser = localStorage.getItem("wa_active_user") || "";
         let activeRecipient = "";
         let cachedUserList = [];
-        let lastMessageTimestamp = 0;
+        let db = null;
 
-        let pollMessageInterval = null;
+        let pollQueueInterval = null;
         let pollDirectoryInterval = null;
         let heartbeatInterval = null;
 
@@ -939,21 +846,67 @@
         let audioChunks = [];
         let recDuration = 0;
         let recInterval = null;
-        let activeContextMessageId = null;
         let deferredPrompt = null;
 
-        window.onload = () => {
+        window.onload = async () => {
+            await initIndexedDB();
             if (currentUser) initializeWhatsApp();
             requestNotificationAccess();
             registerServiceWorker();
         };
 
-        // Service Worker & PWA Install Prompts
+        // ------------------ LOCAL INDEXEDDB DATABASE ------------------
+        function initIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open("WhatsAppLocalDB", 1);
+                req.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains("messages")) {
+                        const store = database.createObjectStore("messages", { keyPath: "id" });
+                        store.createIndex("chatPair", ["chatWith", "timestamp"], { unique: false });
+                    }
+                };
+                req.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        function saveLocalMessage(msg) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction("messages", "readwrite");
+                const store = tx.objectStore("messages");
+                // Associate with specific user chat
+                const chatWith = (msg.sender.toLowerCase() === currentUser.toLowerCase())
+                    ? msg.recipient.toLowerCase()
+                    : msg.sender.toLowerCase();
+
+                store.put({ ...msg, chatWith });
+                tx.oncomplete = () => resolve();
+                tx.onerror = (e) => reject(e);
+            });
+        }
+
+        function getLocalMessages(withUser) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction("messages", "readonly");
+                const store = tx.objectStore("messages");
+                const idx = store.index("chatPair");
+                const target = withUser.toLowerCase();
+                const range = IDBKeyRange.bound([target, 0], [target, Infinity]);
+
+                const req = idx.getAll(range);
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        // ------------------ PWA SERVICE WORKER ------------------
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW registered:', reg.scope))
-                    .catch(err => console.log('SW registration failed:', err));
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
             }
         }
 
@@ -1008,12 +961,13 @@
                 if (document.hidden || activeRecipient !== sender) {
                     new Notification(`New message from ${sender}`, {
                         body: content || "Sent an attachment",
-                        icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/192px-WhatsApp.svg.png"
+                        icon: "icon-192.png"
                     });
                 }
             }
         }
 
+        // ------------------ AUTHENTICATION ------------------
         function toggleAuthMode() {
             isRegister = !isRegister;
             document.getElementById("authBtn").innerText = isRegister ? "Register" : "Continue";
@@ -1063,6 +1017,10 @@
             clearInterval(heartbeatInterval);
             heartbeatInterval = setInterval(sendLiveHeartbeat, 6000);
             sendLiveHeartbeat();
+
+            // Continuously drain incoming messages from cloud queue into local device database
+            clearInterval(pollQueueInterval);
+            pollQueueInterval = setInterval(pollAndDrainCloudQueue, 2500);
         }
 
         function logout() {
@@ -1129,9 +1087,8 @@
                 });
         }
 
-        function openConversation(userObj) {
+        async function openConversation(userObj) {
             activeRecipient = userObj.username;
-            lastMessageTimestamp = 0;
             document.getElementById("msgBox").innerHTML = "";
 
             document.getElementById("directoryScreen").style.display = "none";
@@ -1141,9 +1098,11 @@
 
             updateChatHeaderState(userObj);
 
-            fetchMessages();
-            clearInterval(pollMessageInterval);
-            pollMessageInterval = setInterval(fetchMessages, 3000);
+            // Load all historical chats directly from Local Device Storage
+            const localHistory = await getLocalMessages(activeRecipient);
+            localHistory.forEach(renderBubble);
+            const box = document.getElementById("msgBox");
+            box.scrollTop = box.scrollHeight;
         }
 
         function updateChatHeaderState(userObj) {
@@ -1162,37 +1121,44 @@
 
         function returnToDirectory() {
             activeRecipient = "";
-            clearInterval(pollMessageInterval);
             document.getElementById("chatScreen").style.display = "none";
             document.getElementById("directoryScreen").style.display = "flex";
             fetchDirectory();
         }
 
-        async function fetchMessages() {
-            if (!activeRecipient) return;
+        // ------------------ LOCAL-FIRST CLOUD DRAIN ENGINE ------------------
+        async function pollAndDrainCloudQueue() {
+            if (!currentUser) return;
             try {
-                const url = `${SCRIPT_URL}?action=getMessages&u1=${encodeURIComponent(currentUser)}&u2=${encodeURIComponent(activeRecipient)}&lastTimestamp=${lastMessageTimestamp}`;
-                const res = await fetch(url);
+                const res = await fetch(`${SCRIPT_URL}?action=pollInbox&user=${encodeURIComponent(currentUser)}`);
                 const data = await res.json();
-                if (data.status === "success" && data.messages.length > 0) {
-                    let hasNewIncoming = false;
-                    let lastIncomingMsg = null;
 
-                    data.messages.forEach(msg => {
-                        renderBubble(msg);
-                        if (msg.sender.toLowerCase() !== currentUser.toLowerCase()) {
-                            hasNewIncoming = true;
-                            lastIncomingMsg = msg;
+                if (data.status === "success" && data.messages && data.messages.length > 0) {
+                    const deliveredIds = [];
+
+                    for (const msg of data.messages) {
+                        // 1. Commit message directly into local device database
+                        await saveLocalMessage(msg);
+                        deliveredIds.push(msg.id);
+
+                        // 2. Render live if the user is currently viewing this conversation
+                        if (activeRecipient && msg.sender.toLowerCase() === activeRecipient.toLowerCase()) {
+                            renderBubble(msg);
+                            const box = document.getElementById("msgBox");
+                            box.scrollTop = box.scrollHeight;
                         }
-                    });
 
-                    if (hasNewIncoming && lastMessageTimestamp !== 0) {
-                        triggerNotification(lastIncomingMsg.sender, lastIncomingMsg.content);
+                        triggerNotification(msg.sender, msg.content);
                     }
 
-                    lastMessageTimestamp = data.messages[data.messages.length - 1].timestamp;
-                    const box = document.getElementById("msgBox");
-                    box.scrollTop = box.scrollHeight;
+                    // 3. Inform Google Sheets to permanently purge the messages from the server
+                    await fetch(SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            action: "ackMessages",
+                            messageIds: deliveredIds
+                        })
+                    });
                 }
             } catch (e) { }
         }
@@ -1206,13 +1172,7 @@
                 bubble = document.createElement("div");
                 bubble.id = msg.id;
                 bubble.className = `bubble ${isOut ? 'outgoing' : 'incoming'}`;
-                bubble.oncontextmenu = (e) => openActionSheet(e, msg.id, isOut);
                 box.appendChild(bubble);
-            }
-
-            if (msg.isDeleted) {
-                bubble.innerHTML = `<span class="deleted-text">This message was deleted</span>`;
-                return;
             }
 
             let body = "";
@@ -1221,22 +1181,22 @@
             } else if (msg.type === "image") {
                 body = `
                     <div class="media-container">
-                        <img src="${msg.fileUrl}" loading="lazy" onclick="showMediaPreview('${msg.fileUrl}', 'image', '${escapeHtml(msg.content || 'Image')}')" />
+                        <img src="${msg.fileData}" loading="lazy" onclick="showMediaPreview('${msg.fileData}', 'image', '${escapeHtml(msg.content || 'Image')}')" />
                     </div>
                     <div class="media-actions">
-                        <button class="media-btn" onclick="downloadAttachment('${msg.fileUrl}', '${escapeHtml(msg.content || 'image.jpg')}')">
+                        <button class="media-btn" onclick="downloadAttachment('${msg.fileData}', '${escapeHtml(msg.content || 'image.jpg')}')">
                             <svg class="svg-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                            Download
+                            Save
                         </button>
                     </div>`;
             } else if (msg.type === "video") {
                 body = `
                     <div class="media-container">
-                        <video controls src="${msg.fileUrl}"></video>
+                        <video controls src="${msg.fileData}"></video>
                     </div>
                     <div class="media-actions">
-                        <button class="media-btn" onclick="showMediaPreview('${msg.fileUrl}', 'video', '${escapeHtml(msg.content || 'Video')}')">Fullscreen</button>
-                        <button class="media-btn" onclick="downloadAttachment('${msg.fileUrl}', '${escapeHtml(msg.content || 'video.mp4')}')">Download</button>
+                        <button class="media-btn" onclick="showMediaPreview('${msg.fileData}', 'video', '${escapeHtml(msg.content || 'Video')}')">Fullscreen</button>
+                        <button class="media-btn" onclick="downloadAttachment('${msg.fileData}', '${escapeHtml(msg.content || 'video.mp4')}')">Save</button>
                     </div>`;
             } else if (msg.type === "audio") {
                 body = `
@@ -1244,35 +1204,32 @@
                         <div class="voice-icon-box">
                             <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                         </div>
-                        <audio controls src="${msg.fileUrl}"></audio>
+                        <audio controls src="${msg.fileData}"></audio>
                     </div>
                     <div class="media-actions">
-                        <button class="media-btn" onclick="downloadAttachment('${msg.fileUrl}', 'VoiceMessage.mp4')">Download Audio</button>
+                        <button class="media-btn" onclick="downloadAttachment('${msg.fileData}', 'VoiceMessage.mp4')">Save Audio</button>
                     </div>`;
             } else if (msg.type === "document") {
                 body = `
-                    <div class="doc-card" onclick="showMediaPreview('${msg.fileUrl}', 'document', '${escapeHtml(msg.content)}')">
+                    <div class="doc-card" onclick="showMediaPreview('${msg.fileData}', 'document', '${escapeHtml(msg.content)}')">
                         <div class="doc-icon-box">
                             <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                         </div>
                         <span class="doc-title">${escapeHtml(msg.content)}</span>
                     </div>
                     <div class="media-actions">
-                        <button class="media-btn" onclick="downloadAttachment('${msg.fileUrl}', '${escapeHtml(msg.content)}')">Download</button>
+                        <button class="media-btn" onclick="downloadAttachment('${msg.fileData}', '${escapeHtml(msg.content)}')">Save Document</button>
                     </div>`;
             }
 
             const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const ticks = isOut ? `<span class="ticks ${msg.status === 'read' ? 'read' : 'sent'}">${msg.status === 'read' ? '✓✓' : '✓'}</span>` : '';
-            const reaction = msg.reaction ? `<div class="reaction-badge">${msg.reaction}</div>` : '';
-
-            bubble.innerHTML = `${body} <div class="msg-meta">${time} ${ticks}</div> ${reaction}`;
+            bubble.innerHTML = `${body} <div class="msg-meta">${time}</div>`;
         }
 
         function showMediaPreview(url, type, filename) {
             const container = document.getElementById("previewMediaContainer");
             document.getElementById("previewFilename").innerText = filename;
-            
+
             const downloadBtn = document.getElementById("previewDownloadBtn");
             downloadBtn.onclick = () => downloadAttachment(url, filename);
 
@@ -1294,26 +1251,14 @@
             document.getElementById("previewModal").style.display = "none";
         }
 
-        async function downloadAttachment(url, filename) {
-            setProgress(30);
-            try {
-                const res = await fetch(url);
-                const blob = await res.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = blobUrl;
-                a.download = filename || 'attachment';
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(blobUrl);
-                document.body.removeChild(a);
-            } catch (err) {
-                window.open(url, '_blank');
-            } finally {
-                setProgress(100);
-                setTimeout(() => setProgress(0), 300);
-            }
+        function downloadAttachment(url, filename) {
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename || 'attachment';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         function handleInputTyping(e) {
@@ -1321,19 +1266,21 @@
             if (e.key === 'Enter') sendTextMessage();
         }
 
+        // Send Text: Store locally immediately, dispatch to recipient queue
         async function sendTextMessage() {
             const inp = document.getElementById("chatMessageInput");
             const val = inp.value.trim();
-            if (!val) return;
+            if (!val || !activeRecipient) return;
             inp.value = "";
 
-            await postPayload({
-                action: "sendMessage",
+            const payload = {
                 sender: currentUser,
                 recipient: activeRecipient,
                 type: "text",
                 content: val
-            });
+            };
+
+            await dispatchAndCommit(payload);
         }
 
         function toggleAttachmentPopup() {
@@ -1341,12 +1288,11 @@
             pop.style.display = pop.style.display === "grid" ? "none" : "grid";
         }
 
-        async function uploadDirectFile(e, designatedType) {
+        // Direct Local File Handlers (Converted to Data URLs stored directly in device IndexedDB)
+        async function handleLocalFileSelect(e, designatedType) {
             const file = e.target.files[0];
             if (!file) return;
             document.getElementById("attachPopup").style.display = "none";
-
-            if (file.size > 15 * 1024 * 1024) return alert("File exceeds 15MB limit.");
 
             setProgress(30);
             const reader = new FileReader();
@@ -1357,36 +1303,59 @@
                 else if (file.type.startsWith("video/")) payloadType = "video";
                 else if (file.type.startsWith("audio/")) payloadType = "audio";
 
-                await postPayload({
-                    action: "sendMessage",
+                await dispatchAndCommit({
                     sender: currentUser,
                     recipient: activeRecipient,
                     type: payloadType,
                     content: file.name,
-                    fileName: file.name,
-                    fileType: file.type,
-                    fileData: reader.result
+                    fileData: reader.result,
+                    fileType: file.type
                 });
+
                 setProgress(100);
                 setTimeout(() => setProgress(0), 300);
             };
             reader.readAsDataURL(file);
         }
 
+        async function dispatchAndCommit(msgPayload) {
+            try {
+                // 1. Dispatch through Google Script message routing queue
+                const res = await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "dispatchMessage", ...msgPayload })
+                });
+                const data = await res.json();
+
+                if (data.status === "success") {
+                    const localRecord = {
+                        ...msgPayload,
+                        id: data.id,
+                        timestamp: data.timestamp
+                    };
+
+                    // 2. Save directly to Sender's device
+                    await saveLocalMessage(localRecord);
+
+                    // 3. Render into UI
+                    renderBubble(localRecord);
+                    const box = document.getElementById("msgBox");
+                    box.scrollTop = box.scrollHeight;
+                }
+            } catch (e) {
+                alert("Failed to send. Please check your connection.");
+            }
+        }
+
+        // Viewport layout handling
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 const app = document.getElementById('app');
                 app.style.height = `${window.visualViewport.height}px`;
-
                 const box = document.getElementById("msgBox");
-                if (box) {
-                    setTimeout(() => { box.scrollTop = box.scrollHeight; }, 100);
-                }
+                if (box) setTimeout(() => { box.scrollTop = box.scrollHeight; }, 100);
             });
-
-            window.visualViewport.addEventListener('scroll', () => {
-                window.scrollTo(0, 0);
-            });
+            window.visualViewport.addEventListener('scroll', () => { window.scrollTo(0, 0); });
         }
 
         const messageInput = document.getElementById("chatMessageInput");
@@ -1400,13 +1369,7 @@
         }
 
         function getSupportedAudioMimeType() {
-            const types = [
-                'audio/webm;codecs=opus',
-                'audio/webm',
-                'audio/mp4',
-                'audio/aac',
-                'audio/ogg'
-            ];
+            const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/ogg'];
             for (let t of types) {
                 if (MediaRecorder.isTypeSupported(t)) return t;
             }
@@ -1422,14 +1385,12 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 const selectedMime = getSupportedAudioMimeType();
                 const options = selectedMime ? { mimeType: selectedMime } : {};
-                
+
                 mediaRecorder = new MediaRecorder(stream, options);
                 audioChunks = [];
 
                 mediaRecorder.ondataavailable = (event) => {
-                    if (event.data && event.data.size > 0) {
-                        audioChunks.push(event.data);
-                    }
+                    if (event.data && event.data.size > 0) audioChunks.push(event.data);
                 };
 
                 mediaRecorder.start(250);
@@ -1449,7 +1410,7 @@
                     document.getElementById("recTimer").innerText = `${mins}:${secs}`;
                 }, 1000);
             } catch (err) {
-                alert("Microphone access denied or audio format unsupported.");
+                alert("Microphone access denied or unsupported format.");
             }
         }
 
@@ -1466,9 +1427,7 @@
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 mediaRecorder.onstop = null;
                 mediaRecorder.stop();
-                if (mediaRecorder.stream) {
-                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
-                }
+                if (mediaRecorder.stream) mediaRecorder.stream.getTracks().forEach(track => track.stop());
             }
             resetRecordingUi();
         }
@@ -1479,25 +1438,20 @@
             mediaRecorder.onstop = async () => {
                 const actualMime = mediaRecorder.mimeType || 'audio/mp4';
                 const audioBlob = new Blob(audioChunks, { type: actualMime });
-                
-                if (mediaRecorder.stream) {
-                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
-                }
-                
+
+                if (mediaRecorder.stream) mediaRecorder.stream.getTracks().forEach(track => track.stop());
+
                 if (audioBlob.size > 0) {
                     setProgress(40);
-                    const ext = actualMime.includes('webm') ? 'webm' : (actualMime.includes('ogg') ? 'ogg' : 'mp4');
                     const reader = new FileReader();
                     reader.onload = async () => {
-                        await postPayload({
-                            action: "sendMessage",
+                        await dispatchAndCommit({
                             sender: currentUser,
                             recipient: activeRecipient,
                             type: "audio",
                             content: "Voice Message",
-                            fileName: `Voice_${Date.now()}.${ext}`,
-                            fileType: actualMime,
-                            fileData: reader.result
+                            fileData: reader.result,
+                            fileType: actualMime
                         });
                         setProgress(100);
                         setTimeout(() => setProgress(0), 300);
@@ -1508,37 +1462,6 @@
 
             mediaRecorder.stop();
             resetRecordingUi();
-        }
-
-        function openActionSheet(e, msgId, isMine) {
-            e.preventDefault();
-            activeContextMessageId = msgId;
-            document.getElementById("deleteForEveryoneBtn").style.display = isMine ? "block" : "none";
-            document.getElementById("actionSheet").style.display = "flex";
-        }
-
-        function closeActionSheet() {
-            document.getElementById("actionSheet").style.display = "none";
-            activeContextMessageId = null;
-        }
-
-        async function applyReaction(emoji) {
-            const id = activeContextMessageId;
-            closeActionSheet();
-            await postPayload({ action: "reactMessage", messageId: id, reaction: emoji });
-        }
-
-        async function executeDeleteForEveryone() {
-            const id = activeContextMessageId;
-            closeActionSheet();
-            await postPayload({ action: "deleteMessage", messageId: id, sender: currentUser });
-        }
-
-        async function postPayload(data) {
-            try {
-                await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
-                fetchMessages();
-            } catch (e) { }
         }
 
         function setProgress(pct) {
