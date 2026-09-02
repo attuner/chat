@@ -6,6 +6,18 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>WhatsApp Web</title>
+
+    <!-- PWA Manifest & Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#008069">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- iOS PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WhatsApp">
+    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/192px-WhatsApp.svg.png">
+
     <style>
         :root {
             --wa-teal: #008069;
@@ -51,7 +63,6 @@
             overflow: hidden;
         }
 
-        /* SVG Icon Utility */
         .svg-icon {
             width: 22px;
             height: 22px;
@@ -163,6 +174,26 @@
         .current-user-tag {
             font-size: 11px;
             opacity: 0.8;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pwa-install-btn {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            background: #25d366;
+            color: #111b21;
+            border: none;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 5px 9px;
+            border-radius: 6px;
+            cursor: pointer;
         }
 
         .search-wrapper {
@@ -385,7 +416,7 @@
             color: var(--wa-tick-gray);
         }
 
-        /* Modern Attachments & Media Styling */
+        /* Media and Attachments */
         .media-container {
             position: relative;
             display: block;
@@ -503,7 +534,7 @@
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
-        /* Footer & Controls */
+        /* Footer Controls */
         .chat-bottom {
             flex-shrink: 0;
             background: #f0f2f5;
@@ -517,7 +548,6 @@
             box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
         }
 
-        /* Voice Recording Controls */
         .recording-panel {
             display: none;
             flex: 1;
@@ -630,7 +660,7 @@
             justify-content: center;
         }
 
-        /* Context Action Overlay */
+        /* Context Sheet */
         .action-sheet {
             position: fixed;
             inset: 0;
@@ -776,7 +806,13 @@
                         <div class="current-user-tag">Online Account</div>
                     </div>
                 </div>
-                <span style="font-size: 13px; cursor: pointer; background: rgba(255,255,255,0.15); padding: 5px 10px; border-radius: 6px;" onclick="logout()">Logout</span>
+                <div class="header-actions">
+                    <button class="pwa-install-btn" id="pwaInstallBtn" onclick="installPWA()">
+                        <svg class="svg-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                        Install
+                    </button>
+                    <span style="font-size: 13px; cursor: pointer; background: rgba(255,255,255,0.15); padding: 5px 10px; border-radius: 6px;" onclick="logout()">Logout</span>
+                </div>
             </div>
             <div class="search-wrapper">
                 <input type="text" id="userSearchInput" class="search-input" placeholder="Search or start new chat"
@@ -802,7 +838,7 @@
 
             <div class="msg-box" id="msgBox"></div>
 
-            <!-- Attachment Popup with Modern Icons -->
+            <!-- Attachment Popup -->
             <div class="attach-popup" id="attachPopup">
                 <label class="attach-btn">
                     <div class="attach-icon" style="background: #5f66cd;">
@@ -829,7 +865,7 @@
                 </label>
             </div>
 
-            <!-- Input Footer with Modern Controls -->
+            <!-- Input Controls -->
             <div class="chat-bottom">
                 <button class="action-icon" id="attachToggleBtn" onclick="toggleAttachmentPopup()">
                     <svg class="svg-icon" viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
@@ -843,7 +879,7 @@
                     <svg class="svg-icon" style="width: 18px; height: 18px;" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
 
-                <!-- Voice Recording Controls Panel -->
+                <!-- Voice Recording Panel -->
                 <div class="recording-panel" id="recPanel">
                     <div class="rec-indicator"></div>
                     <span class="rec-timer" id="recTimer">0:00</span>
@@ -904,11 +940,44 @@
         let recDuration = 0;
         let recInterval = null;
         let activeContextMessageId = null;
+        let deferredPrompt = null;
 
         window.onload = () => {
             if (currentUser) initializeWhatsApp();
             requestNotificationAccess();
+            registerServiceWorker();
         };
+
+        // Service Worker & PWA Install Prompts
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW registered:', reg.scope))
+                    .catch(err => console.log('SW registration failed:', err));
+            }
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.getElementById('pwaInstallBtn');
+            if (btn) btn.style.display = 'inline-flex';
+        });
+
+        async function installPWA() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                document.getElementById('pwaInstallBtn').style.display = 'none';
+            }
+            deferredPrompt = null;
+        }
+
+        window.addEventListener('appinstalled', () => {
+            const btn = document.getElementById('pwaInstallBtn');
+            if (btn) btn.style.display = 'none';
+        });
 
         function requestNotificationAccess() {
             if ("Notification" in window && Notification.permission === "default") {
@@ -939,7 +1008,7 @@
                 if (document.hidden || activeRecipient !== sender) {
                     new Notification(`New message from ${sender}`, {
                         body: content || "Sent an attachment",
-                        icon: "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                        icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/192px-WhatsApp.svg.png"
                     });
                 }
             }
@@ -984,7 +1053,6 @@
             document.getElementById("authScreen").style.display = "none";
             document.getElementById("directoryScreen").style.display = "flex";
 
-            // Update top profile bar with active user credentials
             document.getElementById("dirUserName").innerText = currentUser;
             document.getElementById("dirUserAvatar").innerText = currentUser.charAt(0).toUpperCase();
 
@@ -1331,7 +1399,6 @@
             });
         }
 
-        // Cross-Platform Compatible Voice Note Engine (iOS Safari, Chrome, Firefox)
         function getSupportedAudioMimeType() {
             const types = [
                 'audio/webm;codecs=opus',
@@ -1365,7 +1432,6 @@
                     }
                 };
 
-                // Request data slice every 250ms to ensure buffers flush smoothly on mobile
                 mediaRecorder.start(250);
 
                 document.getElementById("attachToggleBtn").style.display = "none";
@@ -1444,7 +1510,6 @@
             resetRecordingUi();
         }
 
-        // Context Menu Reactions / Delete
         function openActionSheet(e, msgId, isMine) {
             e.preventDefault();
             activeContextMessageId = msgId;
