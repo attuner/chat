@@ -31,11 +31,9 @@
         body {
             height: 100%;
             height: 100dvh;
-            /* Dynamic viewport height adjusts with address bars */
             width: 100%;
             overflow: hidden;
             position: fixed;
-            /* Prevents whole-page bounce/scroll behind chat */
             background: #d1d7db;
             -webkit-text-size-adjust: 100%;
         }
@@ -238,7 +236,6 @@
             flex-direction: column;
             height: 100%;
             min-height: 0;
-            /* Critical: allows flex children to shrink properly */
             flex: 1;
             background: var(--wa-chat-bg);
             background-image: radial-gradient(#d3c8be 1px, transparent 1px);
@@ -347,12 +344,30 @@
             color: var(--wa-tick-gray);
         }
 
-        /* Media items */
-        .bubble img,
+        /* Media and Previews inside bubbles */
+        .media-container {
+            position: relative;
+            display: block;
+            margin-top: 2px;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #0000000d;
+        }
+
+        .bubble img {
+            width: 100%;
+            max-height: 260px;
+            object-fit: cover;
+            border-radius: 6px;
+            display: block;
+            cursor: pointer;
+        }
+
         .bubble video {
             width: 100%;
+            max-height: 260px;
             border-radius: 6px;
-            margin-top: 2px;
+            display: block;
         }
 
         .bubble audio {
@@ -361,15 +376,47 @@
             margin-top: 4px;
         }
 
-        .bubble .doc-link {
+        .media-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 4px 0;
+        }
+
+        .media-btn {
+            background: rgba(0, 0, 0, 0.06);
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            color: var(--wa-teal-dark);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .bubble .doc-card {
             display: flex;
             align-items: center;
             gap: 8px;
             text-decoration: none;
-            color: #027eb5;
-            padding: 6px;
-            background: rgba(0, 0, 0, 0.03);
-            border-radius: 4px;
+            color: #111b21;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .doc-title {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .reaction-badge {
@@ -386,10 +433,8 @@
         /* Footer & Controls */
         .chat-bottom {
             flex-shrink: 0;
-            /* Never shrink or get pushed down */
             background: #f0f2f5;
             padding: 8px 10px;
-            /* Respect notch and home indicator bar on iOS */
             padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
             display: flex;
             align-items: center;
@@ -397,6 +442,47 @@
             position: relative;
             z-index: 10;
             box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Dedicated Voice Recording Controls Panel */
+        .recording-panel {
+            display: none;
+            flex: 1;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            border-radius: 20px;
+            padding: 6px 14px;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        .rec-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ea4335;
+            animation: blinker 1s infinite alternate;
+        }
+
+        @keyframes blinker {
+            from { opacity: 1; }
+            to { opacity: 0.2; }
+        }
+
+        .rec-timer {
+            font-size: 14px;
+            color: #54656f;
+            font-variant-numeric: tabular-nums;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .rec-action-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 2px 6px;
         }
 
         .attach-popup {
@@ -440,7 +526,6 @@
             padding: 10px 14px;
             border: none;
             border-radius: 20px;
-            /* 16px prevents iOS Safari from automatically zooming into the input */
             font-size: 16px;
             outline: none;
             background: white;
@@ -453,21 +538,6 @@
             cursor: pointer;
             color: #54656f;
             padding: 4px;
-        }
-
-        .mic-recording {
-            color: #ea4335 !important;
-            animation: pulse 1s infinite alternate;
-        }
-
-        @keyframes pulse {
-            from {
-                opacity: 1;
-            }
-
-            to {
-                opacity: 0.3;
-            }
         }
 
         .send-fab {
@@ -529,6 +599,62 @@
 
         .sheet-btn.danger {
             color: #ea4335;
+        }
+
+        /* Full Screen Preview Modal */
+        .preview-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(11, 20, 26, 0.95);
+            display: none;
+            flex-direction: column;
+            z-index: 200;
+        }
+
+        .preview-header {
+            height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            color: white;
+        }
+
+        .preview-title {
+            font-size: 15px;
+            font-weight: 500;
+            max-width: 220px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .preview-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .preview-content img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .preview-content video {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .preview-content iframe {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border: none;
+            border-radius: 8px;
         }
 
         .progress-line {
@@ -611,12 +737,31 @@
 
             <!-- Input Footer -->
             <div class="chat-bottom">
-                <button class="action-icon" onclick="toggleAttachmentPopup()">📎</button>
+                <!-- Standard Entry State -->
+                <button class="action-icon" id="attachToggleBtn" onclick="toggleAttachmentPopup()">📎</button>
                 <input type="text" id="chatMessageInput" class="chat-input" placeholder="Type a message"
                     onkeydown="handleInputTyping(event)" />
-                <button class="action-icon" id="micBtn" onclick="toggleAudioRecording()">🎤</button>
-                <button class="send-fab" onclick="sendTextMessage()">➤</button>
+                <button class="action-icon" id="micBtn" onclick="startVoiceRecording()">🎤</button>
+                <button class="send-fab" id="sendTextBtn" onclick="sendTextMessage()">➤</button>
+
+                <!-- Dedicated Voice Recording State -->
+                <div class="recording-panel" id="recPanel">
+                    <div class="rec-indicator"></div>
+                    <span class="rec-timer" id="recTimer">0:00</span>
+                    <button class="rec-action-btn" title="Cancel" onclick="cancelVoiceRecording()">🗑️</button>
+                    <button class="rec-action-btn" title="Send" style="color: var(--wa-teal);" onclick="stopAndSendVoiceRecording()">➤</button>
+                </div>
             </div>
+        </div>
+
+        <!-- Full-Screen Media Preview & Download Modal -->
+        <div class="preview-modal" id="previewModal">
+            <div class="preview-header">
+                <button class="nav-btn" onclick="closeMediaPreview()">✕</button>
+                <span class="preview-title" id="previewFilename">Preview</span>
+                <button class="nav-btn" id="previewDownloadBtn">⬇️</button>
+            </div>
+            <div class="preview-content" id="previewMediaContainer"></div>
         </div>
 
         <!-- Context Action / Reactions Bottom Sheet -->
@@ -650,12 +795,50 @@
         let isRegister = false;
         let mediaRecorder = null;
         let audioChunks = [];
-        let isRecordingAudio = false;
+        let recDuration = 0;
+        let recInterval = null;
         let activeContextMessageId = null;
 
         window.onload = () => {
             if (currentUser) initializeWhatsApp();
+            requestNotificationAccess();
         };
+
+        function requestNotificationAccess() {
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+        }
+
+        // Web Audio Synthesizer (Instant notification chime without external mp3s)
+        function playAlertTone() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(830, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1240, ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } catch (e) {}
+        }
+
+        function triggerNotification(sender, content) {
+            playAlertTone();
+            if ("Notification" in window && Notification.permission === "granted") {
+                if (document.hidden || activeRecipient !== sender) {
+                    new Notification(`New message from ${sender}`, {
+                        body: content || "Sent an attachment",
+                        icon: "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                    });
+                }
+            }
+        }
 
         function toggleAuthMode() {
             isRegister = !isRegister;
@@ -681,6 +864,7 @@
                     currentUser = data.username;
                     localStorage.setItem("wa_active_user", currentUser);
                     initializeWhatsApp();
+                    requestNotificationAccess();
                 } else {
                     alert(data.message || "Failed authentication");
                 }
@@ -728,7 +912,6 @@
                     cachedUserList = data.users;
                     renderUserDirectory();
 
-                    // Update live status if currently chatting
                     if (activeRecipient) {
                         const u = cachedUserList.find(x => x.username.toLowerCase() === activeRecipient.toLowerCase());
                         if (u) updateChatHeaderState(u);
@@ -815,7 +998,22 @@
                 const res = await fetch(url);
                 const data = await res.json();
                 if (data.status === "success" && data.messages.length > 0) {
-                    data.messages.forEach(renderBubble);
+                    let hasNewIncoming = false;
+                    let lastIncomingMsg = null;
+
+                    data.messages.forEach(msg => {
+                        renderBubble(msg);
+                        if (msg.sender.toLowerCase() !== currentUser.toLowerCase()) {
+                            hasNewIncoming = true;
+                            lastIncomingMsg = msg;
+                        }
+                    });
+
+                    // Trigger notification sound/banner on incoming traffic
+                    if (hasNewIncoming && lastMessageTimestamp !== 0) {
+                        triggerNotification(lastIncomingMsg.sender, lastIncomingMsg.content);
+                    }
+
                     lastMessageTimestamp = data.messages[data.messages.length - 1].timestamp;
                     const box = document.getElementById("msgBox");
                     box.scrollTop = box.scrollHeight;
@@ -828,7 +1026,6 @@
             let bubble = document.getElementById(msg.id);
             const isOut = msg.sender.toLowerCase() === currentUser.toLowerCase();
 
-            // Re-render if it exists (for edits/reactions/deletes)
             if (!bubble) {
                 bubble = document.createElement("div");
                 bubble.id = msg.id;
@@ -846,13 +1043,37 @@
             if (msg.type === "text") {
                 body = `<span>${escapeHtml(msg.content)}</span>`;
             } else if (msg.type === "image") {
-                body = `<img src="${msg.fileUrl}" loading="lazy" />`;
+                body = `
+                    <div class="media-container">
+                        <img src="${msg.fileUrl}" loading="lazy" onclick="showMediaPreview('${msg.fileUrl}', 'image', '${escapeHtml(msg.content || 'Image')}')" />
+                    </div>
+                    <div class="media-actions">
+                        <button class="media-btn" onclick="downloadAttachment('${msg.fileUrl}', '${escapeHtml(msg.content || 'image.jpg')}')">⬇️ Download</button>
+                    </div>`;
             } else if (msg.type === "video") {
-                body = `<video controls src="${msg.fileUrl}"></video>`;
+                body = `
+                    <div class="media-container">
+                        <video controls src="${msg.fileUrl}"></video>
+                    </div>
+                    <div class="media-actions">
+                        <button class="media-btn" onclick="showMediaPreview('${msg.fileUrl}', 'video', '${escapeHtml(msg.content || 'Video')}')">🔍 Fullscreen</button>
+                        <button class="media-btn" onclick="downloadAttachment('${msg.fileUrl}', '${escapeHtml(msg.content || 'video.mp4')}')">⬇️ Download</button>
+                    </div>`;
             } else if (msg.type === "audio") {
-                body = `<audio controls src="${msg.fileUrl}"></audio>`;
+                body = `
+                    <audio controls src="${msg.fileUrl}"></audio>
+                    <div class="media-actions">
+                        <button class="media-btn" onclick="downloadAttachment('${msg.fileUrl}', 'VoiceNote.webm')">⬇️ Download Audio</button>
+                    </div>`;
             } else if (msg.type === "document") {
-                body = `<a class="doc-link" href="${msg.fileUrl}" target="_blank">📄 ${escapeHtml(msg.content)}</a>`;
+                body = `
+                    <div class="doc-card" onclick="showMediaPreview('${msg.fileUrl}', 'document', '${escapeHtml(msg.content)}')">
+                        <span style="font-size: 20px;">📄</span>
+                        <span class="doc-title">${escapeHtml(msg.content)}</span>
+                    </div>
+                    <div class="media-actions">
+                        <button class="media-btn" onclick="downloadAttachment('${msg.fileUrl}', '${escapeHtml(msg.content)}')">⬇️ Download</button>
+                    </div>`;
             }
 
             const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -860,6 +1081,55 @@
             const reaction = msg.reaction ? `<div class="reaction-badge">${msg.reaction}</div>` : '';
 
             bubble.innerHTML = `${body} <div class="msg-meta">${time} ${ticks}</div> ${reaction}`;
+        }
+
+        // Dedicated Media Preview and Download Logic
+        function showMediaPreview(url, type, filename) {
+            const container = document.getElementById("previewMediaContainer");
+            document.getElementById("previewFilename").innerText = filename;
+            
+            const downloadBtn = document.getElementById("previewDownloadBtn");
+            downloadBtn.onclick = () => downloadAttachment(url, filename);
+
+            container.innerHTML = "";
+            if (type === "image") {
+                container.innerHTML = `<img src="${url}" />`;
+            } else if (type === "video") {
+                container.innerHTML = `<video controls autoplay src="${url}"></video>`;
+            } else if (type === "document") {
+                container.innerHTML = `<iframe src="${url}"></iframe>`;
+            }
+
+            document.getElementById("previewModal").style.display = "flex";
+        }
+
+        function closeMediaPreview() {
+            const container = document.getElementById("previewMediaContainer");
+            container.innerHTML = "";
+            document.getElementById("previewModal").style.display = "none";
+        }
+
+        async function downloadAttachment(url, filename) {
+            setProgress(30);
+            try {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = filename || 'attachment';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+            } catch (err) {
+                // Fallback for strict cross-origin blocks
+                window.open(url, '_blank');
+            } finally {
+                setProgress(100);
+                setTimeout(() => setProgress(0), 300);
+            }
         }
 
         function handleInputTyping(e) {
@@ -918,29 +1188,24 @@
             };
             reader.readAsDataURL(file);
         }
-        // Keep bottom input visible when soft keyboard opens/closes on mobile
+
+        // Visual Viewport & Keyboard Resizer
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 const app = document.getElementById('app');
-                // Lock app container directly to visible viewport height
                 app.style.height = `${window.visualViewport.height}px`;
 
-                // Auto-scroll messages to the bottom when keyboard appears
                 const box = document.getElementById("msgBox");
                 if (box) {
-                    setTimeout(() => {
-                        box.scrollTop = box.scrollHeight;
-                    }, 100);
+                    setTimeout(() => { box.scrollTop = box.scrollHeight; }, 100);
                 }
             });
 
             window.visualViewport.addEventListener('scroll', () => {
-                // Prevent iOS page drift on keyboard interaction
                 window.scrollTo(0, 0);
             });
         }
 
-        // Ensure the input field scrolls into view on focus
         const messageInput = document.getElementById("chatMessageInput");
         if (messageInput) {
             messageInput.addEventListener("focus", () => {
@@ -951,20 +1216,70 @@
             });
         }
 
-        // Voice Note Recorder
-        async function toggleAudioRecording() {
-            const micBtn = document.getElementById("micBtn");
-            if (!isRecordingAudio) {
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    return alert("Microphone not supported on this browser.");
-                }
+        // Controlled Voice Note Recording (Start / Stop & Send / Cancel)
+        async function startVoiceRecording() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                return alert("Microphone not supported on this browser.");
+            }
+
+            try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
 
-                mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) audioChunks.push(event.data);
+                };
+
+                mediaRecorder.start();
+
+                // Swap Input bar with Dedicated Voice Recording Controls
+                document.getElementById("attachToggleBtn").style.display = "none";
+                document.getElementById("chatMessageInput").style.display = "none";
+                document.getElementById("micBtn").style.display = "none";
+                document.getElementById("sendTextBtn").style.display = "none";
+                document.getElementById("recPanel").style.display = "flex";
+
+                recDuration = 0;
+                document.getElementById("recTimer").innerText = "0:00";
+                recInterval = setInterval(() => {
+                    recDuration++;
+                    const mins = Math.floor(recDuration / 60);
+                    const secs = (recDuration % 60).toString().padStart(2, '0');
+                    document.getElementById("recTimer").innerText = `${mins}:${secs}`;
+                }, 1000);
+            } catch (err) {
+                alert("Microphone permission denied.");
+            }
+        }
+
+        function resetRecordingUi() {
+            clearInterval(recInterval);
+            document.getElementById("recPanel").style.display = "none";
+            document.getElementById("attachToggleBtn").style.display = "inline-block";
+            document.getElementById("chatMessageInput").style.display = "inline-block";
+            document.getElementById("micBtn").style.display = "inline-block";
+            document.getElementById("sendTextBtn").style.display = "flex";
+        }
+
+        function cancelVoiceRecording() {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.onstop = null;
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            resetRecordingUi();
+        }
+
+        function stopAndSendVoiceRecording() {
+            if (!mediaRecorder || mediaRecorder.state === "inactive") return;
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                
+                if (audioBlob.size > 0) {
+                    setProgress(40);
                     const reader = new FileReader();
                     reader.onload = async () => {
                         await postPayload({
@@ -977,21 +1292,18 @@
                             fileType: "audio/webm",
                             fileData: reader.result
                         });
+                        setProgress(100);
+                        setTimeout(() => setProgress(0), 300);
                     };
                     reader.readAsDataURL(audioBlob);
-                };
+                }
+            };
 
-                mediaRecorder.start();
-                isRecordingAudio = true;
-                micBtn.classList.add("mic-recording");
-            } else {
-                mediaRecorder.stop();
-                isRecordingAudio = false;
-                micBtn.classList.remove("mic-recording");
-            }
+            mediaRecorder.stop();
+            resetRecordingUi();
         }
 
-        // Context Sheet / Reactions / Delete
+        // Context Reactions / Deletions
         function openActionSheet(e, msgId, isMine) {
             e.preventDefault();
             activeContextMessageId = msgId;
