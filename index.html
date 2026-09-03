@@ -51,6 +51,7 @@
             font-size: 16px;
         }
 
+        /* Auto-fit for tablet devices like iPad Mini (up to 820px) and phones */
         #app {
             display: flex;
             flex-direction: column;
@@ -724,7 +725,7 @@
             justify-content: center;
         }
 
-        /* ---------------- CALL OVERLAY ---------------- */
+        /* ---------------- WHATSAPP CALL OVERLAY ---------------- */
         .call-modal {
             position: fixed;
             inset: 0;
@@ -1216,11 +1217,12 @@
         let myPeer = null;
         let activeMediaCall = null;
         let activeDataConn = null;
-        let p2pConnections = {}; // Map of peer connections for 0ms instant text/media
+        let p2pConnections = {}; // Fast map of peer connections for 0ms instant text/media
         let localStream = null;
         let activeCallPeer = null;
         let isVideoCallActive = false;
         let callActiveState = "IDLE"; // IDLE | CALLING | RINGING | CONNECTED
+        let isCallActiveOrConnecting = false; // Prevents duplicate call offer loops
         let callTimerInterval = null;
         let callSeconds = 0;
         let ringAudioTimer = null;
@@ -1319,13 +1321,14 @@
                 setupDataConnectionListeners(conn);
             });
 
-            // 2. Instant Incoming Calls (0ms Handshake)
+            // 2. Instant Incoming Calls (0ms Handshake with call locking)
             myPeer.on("call", (mediaCall) => {
-                if (callActiveState !== "IDLE") {
+                if (callActiveState !== "IDLE" || isCallActiveOrConnecting) {
                     mediaCall.close();
                     return;
                 }
 
+                isCallActiveOrConnecting = true;
                 activeMediaCall = mediaCall;
                 activeCallPeer = mediaCall.metadata?.callerName || "User";
                 isVideoCallActive = !!mediaCall.metadata?.isVideo;
@@ -1618,6 +1621,7 @@
             }
         }
 
+        // ------------------ WHATSAPP AUDIO TONES ------------------
         function playWhatsAppTone(type) {
             stopRingtone();
             try {
@@ -1752,7 +1756,7 @@
             sendLiveHeartbeat();
 
             clearInterval(pollQueueInterval);
-            pollQueueInterval = setInterval(pollAndDrainCloudQueue, 2500);
+            pollQueueInterval = setInterval(pollAndDrainCloudQueue, 2200);
         }
 
         function logout() {
@@ -1788,6 +1792,7 @@
             } catch (e) { }
         }
 
+        // Non-flickering in-place DOM diffing
         async function renderUserDirectory() {
             const list = document.getElementById("chatsListContainer");
             const allMsgs = await getAllLocalMessages();
@@ -2012,6 +2017,7 @@
             activeCallPeer = activeRecipient;
             isVideoCallActive = isVideo;
             callActiveState = "CALLING";
+            isCallActiveOrConnecting = true;
 
             setupCallUi(activeCallPeer, isVideo, "OUTGOING");
             document.getElementById("callStatusText").innerText = "Calling...";
@@ -2056,6 +2062,7 @@
         async function answerCallInstant() {
             stopRingtone();
             callActiveState = "CONNECTED";
+            isCallActiveOrConnecting = true;
 
             document.getElementById("answerActionWrap").style.display = "none";
             document.getElementById("rejectActionLabel").innerText = "End";
@@ -2089,6 +2096,7 @@
         function endCallInstant(isInitiator = true) {
             stopRingtone();
             clearInterval(callTimerInterval);
+            isCallActiveOrConnecting = false;
 
             if (isInitiator && activeCallPeer) {
                 const targetPeerId = getPeerId(activeCallPeer);
