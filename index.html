@@ -48,17 +48,25 @@
             font-size: 16px;
         }
 
+        /* Auto-fit for tablet devices like iPad Mini (up to 820px) and phones */
         #app {
             display: flex;
             flex-direction: column;
             height: 100%;
             height: 100dvh;
-            max-width: 480px;
+            width: 100%;
+            max-width: 100%;
             margin: 0 auto;
             background: var(--wa-chat-bg);
             position: relative;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
             overflow: hidden;
+        }
+
+        @media (min-width: 821px) {
+            #app {
+                max-width: 750px;
+            }
         }
 
         .svg-icon {
@@ -110,6 +118,9 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
+            max-width: 420px;
+            width: 100%;
+            margin: 0 auto;
         }
 
         .auth-box input {
@@ -134,6 +145,11 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+        }
+
+        .auth-box button:disabled {
+            opacity: 0.75;
+            cursor: not-allowed;
         }
 
         .toggle-link {
@@ -241,6 +257,7 @@
             gap: 14px;
             border-bottom: 1px solid #f2f2f2;
             cursor: pointer;
+            transition: background 0.15s ease;
         }
 
         .chat-row:hover {
@@ -251,6 +268,7 @@
             position: relative;
             width: 52px;
             height: 52px;
+            flex-shrink: 0;
         }
 
         .avatar {
@@ -315,7 +333,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 260px;
+            max-width: calc(100% - 35px);
         }
 
         .unread-badge {
@@ -327,6 +345,7 @@
             padding: 2px 7px;
             min-width: 20px;
             text-align: center;
+            flex-shrink: 0;
         }
 
         .typing-text {
@@ -462,7 +481,7 @@
 
         .bubble img {
             width: 100%;
-            max-height: 280px;
+            max-height: 300px;
             object-fit: cover;
             border-radius: 6px;
             display: block;
@@ -476,7 +495,7 @@
 
         .bubble video {
             width: 100%;
-            max-height: 280px;
+            max-height: 300px;
             border-radius: 6px;
             display: block;
         }
@@ -754,6 +773,7 @@
         .call-video-container {
             position: relative;
             width: 100%;
+            max-width: 600px;
             flex: 1;
             margin: 20px 0;
             display: none;
@@ -934,7 +954,7 @@
             </div>
             <div class="search-wrapper">
                 <input type="text" id="userSearchInput" class="search-input" placeholder="Search or start new chat"
-                    oninput="renderUserDirectory()" />
+                    oninput="filterDirectoryUi()" />
             </div>
             <ul class="chats-list" id="chatsListContainer"></ul>
         </div>
@@ -952,7 +972,6 @@
                         <div class="nav-status" id="chatHeaderStatus">offline</div>
                     </div>
                 </div>
-                <!-- WebRTC Voice & Video Call Triggers -->
                 <div class="call-icons">
                     <button class="call-btn-nav" title="Voice Call" onclick="startCall(false)">
                         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg>
@@ -1090,13 +1109,14 @@
 
         const alertedMessageIds = new Set();
 
-        // WebRTC Global State
+        // WebRTC Global State & Call Lock
         let peerConnection = null;
         let localStream = null;
         let activeCallPeer = null;
         let isVideoCallActive = false;
         let incomingOfferData = null;
         let ringtoneTimer = null;
+        let isCallActiveOrConnecting = false; // Prevents repeated incoming call alerts
 
         const rtcConfig = {
             iceServers: [
@@ -1142,9 +1162,7 @@
             enableBackgroundKeepAlive();
         };
 
-        // ------------------ BACKGROUND KEEP-ALIVE ENGINE ------------------
         function enableBackgroundKeepAlive() {
-            // 1. Silent looped audio to prevent mobile browser freezing
             const audio = document.getElementById("keepAliveAudio");
             document.addEventListener("click", () => {
                 if (audio && audio.paused) {
@@ -1153,7 +1171,6 @@
                 requestWakeLock();
             }, { once: true });
 
-            // 2. Screen Wake Lock API
             document.addEventListener("visibilitychange", () => {
                 if (document.visibilityState === "visible") {
                     requestWakeLock();
@@ -1338,7 +1355,6 @@
             }
         }
 
-        // Ringtone generator for Voice & Video calls
         function startRingtone() {
             stopRingtone();
             try {
@@ -1476,15 +1492,11 @@
             } catch (e) { }
         }
 
-        // ------------------ UNREAD COUNTS & LATEST CHAT SORTING ------------------
+        // ------------------ NON-FLICKERING DIRECTORY RENDER (DIFFING) ------------------
         async function renderUserDirectory() {
             const list = document.getElementById("chatsListContainer");
-            const q = document.getElementById("userSearchInput").value.toLowerCase();
-            list.innerHTML = "";
-
             const allMsgs = await getAllLocalMessages();
 
-            // Calculate unread count and latest message timestamp per user
             const userStats = {};
             allMsgs.forEach(m => {
                 const partner = m.chatWith;
@@ -1495,38 +1507,37 @@
                     userStats[partner].lastTimestamp = m.timestamp;
                     userStats[partner].lastMessage = m.type === "text" ? m.content : `[${m.type}]`;
                 }
-                // If message received by current user and unread
                 if (m.recipient.toLowerCase() === currentUser.toLowerCase() && m.status !== "read") {
                     userStats[partner].unreadCount++;
                 }
             });
 
-            // Sort user list: most recent messages on top
+            // Sort: most recent messages on top
             const sortedList = [...cachedUserList].sort((a, b) => {
                 const timeA = userStats[a.username.toLowerCase()]?.lastTimestamp || 0;
                 const timeB = userStats[b.username.toLowerCase()]?.lastTimestamp || 0;
                 return timeB - timeA;
             });
 
-            sortedList
-                .filter(u => u.username.toLowerCase().includes(q))
-                .forEach(u => {
-                    const li = document.createElement("li");
-                    li.className = "chat-row";
-                    li.onclick = () => openConversation(u);
+            const q = document.getElementById("userSearchInput").value.toLowerCase();
 
-                    const initial = u.username.charAt(0).toUpperCase();
-                    const stateClass = u.isOnline ? "online" : "offline";
-                    const stat = userStats[u.username.toLowerCase()] || { lastTimestamp: 0, unreadCount: 0, lastMessage: "" };
-                    
-                    const timeStr = stat.lastTimestamp ? new Date(stat.lastTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-                    const subtitle = u.isTyping ? '<span class="typing-text">typing...</span>' : (stat.lastMessage ? escapeHtml(stat.lastMessage) : escapeHtml(u.about));
-                    const unreadBadge = stat.unreadCount > 0 ? `<span class="unread-badge">${stat.unreadCount}</span>` : '';
+            // Diff and patch nodes rather than resetting innerHTML (eliminates screen blinking)
+            sortedList.forEach((u, index) => {
+                const stat = userStats[u.username.toLowerCase()] || { lastTimestamp: 0, unreadCount: 0, lastMessage: "" };
+                const timeStr = stat.lastTimestamp ? new Date(stat.lastTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                const subtitle = u.isTyping ? '<span class="typing-text">typing...</span>' : (stat.lastMessage ? escapeHtml(stat.lastMessage) : escapeHtml(u.about));
+                const statusClass = u.isOnline ? "online" : "offline";
 
-                    li.innerHTML = `
+                let row = document.getElementById(`user-row-${u.username.toLowerCase()}`);
+                if (!row) {
+                    row = document.createElement("li");
+                    row.id = `user-row-${u.username.toLowerCase()}`;
+                    row.className = "chat-row";
+                    row.onclick = () => openConversation(u);
+                    row.innerHTML = `
                         <div class="avatar-wrap">
-                            <div class="avatar">${initial}</div>
-                            <div class="status-badge ${stateClass}"></div>
+                            <div class="avatar">${u.username.charAt(0).toUpperCase()}</div>
+                            <div class="status-badge ${statusClass}"></div>
                         </div>
                         <div class="contact-info">
                             <div class="contact-top">
@@ -1535,12 +1546,51 @@
                             </div>
                             <div class="contact-bottom">
                                 <div class="contact-sub">${subtitle}</div>
-                                ${unreadBadge}
+                                <span class="unread-badge" style="display: none;"></span>
                             </div>
                         </div>
                     `;
-                    list.appendChild(li);
-                });
+                    list.appendChild(row);
+                } else {
+                    // Update dynamic contents only
+                    const badge = row.querySelector(".status-badge");
+                    if (badge.className !== `status-badge ${statusClass}`) badge.className = `status-badge ${statusClass}`;
+
+                    const timeEl = row.querySelector(".contact-time");
+                    if (timeEl.innerText !== timeStr) timeEl.innerText = timeStr;
+
+                    const subEl = row.querySelector(".contact-sub");
+                    if (subEl.innerHTML !== subtitle) subEl.innerHTML = subtitle;
+
+                    const unreadEl = row.querySelector(".unread-badge");
+                    if (stat.unreadCount > 0) {
+                        unreadEl.innerText = stat.unreadCount;
+                        unreadEl.style.display = "inline-block";
+                    } else {
+                        unreadEl.style.display = "none";
+                    }
+
+                    // Maintain sorted order
+                    const currentIndex = Array.from(list.children).indexOf(row);
+                    if (currentIndex !== index) {
+                        list.insertBefore(row, list.children[index] || null);
+                    }
+                }
+
+                // Search visibility
+                const matches = u.username.toLowerCase().includes(q);
+                row.style.display = matches ? "flex" : "none";
+            });
+        }
+
+        function filterDirectoryUi() {
+            const q = document.getElementById("userSearchInput").value.toLowerCase();
+            cachedUserList.forEach(u => {
+                const row = document.getElementById(`user-row-${u.username.toLowerCase()}`);
+                if (row) {
+                    row.style.display = u.username.toLowerCase().includes(q) ? "flex" : "none";
+                }
+            });
         }
 
         async function openConversation(userObj) {
@@ -1554,7 +1604,7 @@
 
             updateChatHeaderState(userObj);
 
-            // Mark all received messages as read
+            // Mark received messages as read
             const localHistory = await getLocalMessages(activeRecipient);
             for (let m of localHistory) {
                 if (m.recipient.toLowerCase() === currentUser.toLowerCase() && m.status !== "read") {
@@ -1587,7 +1637,7 @@
             fetchDirectory();
         }
 
-        // ------------------ CLOUD QUEUE & WEBRTC SIGNALING ------------------
+        // ------------------ CLOUD QUEUE & WEBRTC CALL DEDUPLICATION ------------------
         async function pollAndDrainCloudQueue() {
             if (!currentUser) return;
             try {
@@ -1602,6 +1652,10 @@
 
                         // WebRTC Signals
                         if (msg.type === "call_offer") {
+                            // Suppress repeated incoming alert if already answered/connecting
+                            if (isCallActiveOrConnecting) {
+                                continue;
+                            }
                             handleIncomingCallOffer(msg);
                             continue;
                         } else if (msg.type === "call_answer") {
@@ -1673,7 +1727,6 @@
                         })
                     });
 
-                    // Refresh directory unread count and latest message sorting
                     if (document.getElementById("directoryScreen").style.display === "flex") {
                         await renderUserDirectory();
                     }
@@ -1770,6 +1823,7 @@
             if (!activeRecipient) return;
             activeCallPeer = activeRecipient;
             isVideoCallActive = isVideo;
+            isCallActiveOrConnecting = true;
 
             openCallModal(activeCallPeer, isVideo ? "Video Calling..." : "Voice Calling...", false);
             startRingtone();
@@ -1822,7 +1876,10 @@
         }
 
         async function answerCall() {
+            // Lock call session and stop incoming ringtones immediately
+            isCallActiveOrConnecting = true;
             stopRingtone();
+
             document.getElementById("callAcceptBtn").style.display = "none";
             document.getElementById("callStatusText").innerText = "Connecting...";
 
@@ -1876,6 +1933,8 @@
 
         function endCall(notifyPeer = true) {
             stopRingtone();
+            isCallActiveOrConnecting = false;
+
             if (notifyPeer && activeCallPeer) {
                 sendSignalingPacket("call_end", "ended");
             }
@@ -2075,7 +2134,6 @@
             }
         }
 
-        // Viewport height management
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 const app = document.getElementById('app');
