@@ -67,7 +67,9 @@
         }
 
         @media (min-width: 821px) {
-            #app { max-width: 750px; }
+            #app {
+                max-width: 750px;
+            }
         }
 
         .svg-icon {
@@ -261,7 +263,9 @@
             transition: background 0.15s ease;
         }
 
-        .chat-row:hover { background: #f5f6f6; }
+        .chat-row:hover {
+            background: #f5f6f6;
+        }
 
         .avatar-wrap {
             position: relative;
@@ -297,7 +301,10 @@
         .online { background: var(--wa-green); }
         .offline { background: var(--wa-tick-gray); }
 
-        .contact-info { flex: 1; min-width: 0; }
+        .contact-info {
+            flex: 1;
+            min-width: 0;
+        }
 
         .contact-top {
             display: flex;
@@ -484,7 +491,10 @@
             cursor: pointer;
         }
 
-        .video-wrapper { position: relative; cursor: pointer; }
+        .video-wrapper {
+            position: relative;
+            cursor: pointer;
+        }
 
         .bubble video {
             width: 100%;
@@ -1213,11 +1223,11 @@
 
         const alertedMessageIds = new Set();
 
-        // ------------------ INSTANT WEBRTC DATA & CALL ENGINE ------------------
+        // ------------------ DUAL-PATH WEBRTC ENGINE (PEERJS) ------------------
         let myPeer = null;
         let activeMediaCall = null;
         let activeDataConn = null;
-        let p2pConnections = {}; // Fast map of peer connections for 0ms instant text/media
+        let p2pConnections = {}; // Fast map of persistent peer connections for 0ms instant text/media
         let localStream = null;
         let activeCallPeer = null;
         let isVideoCallActive = false;
@@ -1298,7 +1308,7 @@
         }
 
         function getPeerId(username) {
-            return "wa_user_" + username.toLowerCase().replace(/[^a-z0-9]/g, "_");
+            return "wa_vcall_" + username.toLowerCase().replace(/[^a-z0-9]/g, "_");
         }
 
         // Persistent 0ms WebSocket signaling & direct data channel routing
@@ -1792,7 +1802,6 @@
             } catch (e) { }
         }
 
-        // Non-flickering in-place DOM diffing
         async function renderUserDirectory() {
             const list = document.getElementById("chatsListContainer");
             const allMsgs = await getAllLocalMessages();
@@ -1899,7 +1908,7 @@
 
             updateChatHeaderState(userObj);
 
-            // Pre-connect direct WebRTC data channel in background for instant transmission
+            // Pre-warm direct P2P data connection for instant messages
             getOrEstablishP2PConnection(activeRecipient);
 
             const localHistory = await getLocalMessages(activeRecipient);
@@ -1934,7 +1943,7 @@
             fetchDirectory();
         }
 
-        // ------------------ CLOUD QUEUE (OFFLINE FALLBACK) ------------------
+        // ------------------ CLOUD QUEUE POLLING (OFFLINE FALLBACK) ------------------
         async function pollAndDrainCloudQueue() {
             if (!currentUser) return;
             try {
@@ -2011,7 +2020,7 @@
             } catch (e) { }
         }
 
-        // ------------------ INSTANT CALL DISPATCH (0ms WEBRTC) ------------------
+        // ------------------ INSTANT CALL DISPATCH & HANDSHAKE ------------------
         async function initiateInstantCall(isVideo) {
             if (!activeRecipient) return;
             activeCallPeer = activeRecipient;
@@ -2037,9 +2046,11 @@
 
                 const targetPeerId = getPeerId(activeCallPeer);
 
+                // Establish direct signaling data link for instant reject/end
                 activeDataConn = myPeer.connect(targetPeerId);
                 setupDataConnectionListeners(activeDataConn);
 
+                // Establish direct audio/video media call
                 activeMediaCall = myPeer.call(targetPeerId, localStream, {
                     metadata: { callerName: currentUser, isVideo: isVideo }
                 });
@@ -2080,6 +2091,7 @@
                     document.getElementById("callAvatarStage").style.display = "none";
                 }
 
+                // Instant Answer via WebRTC
                 activeMediaCall.answer(localStream);
 
                 activeMediaCall.on("stream", (remoteStream) => {
@@ -2287,7 +2299,7 @@
             reader.readAsDataURL(file);
         }
 
-        // Transmit in 0ms over DataConnection, fallback to Google Sheet Queue if offline
+        // Transmit in 0ms over DataConnection, fallback to Google Sheets Queue if offline
         async function dispatchInstantPayload(dataObj) {
             const msgId = "MSG_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
             const timestamp = Date.now();
@@ -2383,7 +2395,7 @@
             }
         }
 
-        // ------------------ PREVIEW & ATTACHMENT CONTROLS ------------------
+        // ------------------ PREVIEW & FILE UTILITIES ------------------
         function renderBubble(msg) {
             const box = document.getElementById("msgBox");
             let bubble = document.getElementById(msg.id);
