@@ -51,7 +51,6 @@
             font-size: 16px;
         }
 
-        /* Auto-fit for tablet devices like iPad Mini (up to 820px) and phones */
         #app {
             display: flex;
             flex-direction: column;
@@ -67,9 +66,7 @@
         }
 
         @media (min-width: 821px) {
-            #app {
-                max-width: 750px;
-            }
+            #app { max-width: 750px; }
         }
 
         .svg-icon {
@@ -263,9 +260,7 @@
             transition: background 0.15s ease;
         }
 
-        .chat-row:hover {
-            background: #f5f6f6;
-        }
+        .chat-row:hover { background: #f5f6f6; }
 
         .avatar-wrap {
             position: relative;
@@ -301,10 +296,7 @@
         .online { background: var(--wa-green); }
         .offline { background: var(--wa-tick-gray); }
 
-        .contact-info {
-            flex: 1;
-            min-width: 0;
-        }
+        .contact-info { flex: 1; min-width: 0; }
 
         .contact-top {
             display: flex;
@@ -491,10 +483,7 @@
             cursor: pointer;
         }
 
-        .video-wrapper {
-            position: relative;
-            cursor: pointer;
-        }
+        .video-wrapper { position: relative; cursor: pointer; }
 
         .bubble video {
             width: 100%;
@@ -1223,16 +1212,16 @@
 
         const alertedMessageIds = new Set();
 
-        // ------------------ DUAL-PATH WEBRTC ENGINE (PEERJS) ------------------
+        // ------------------ DUAL-PATH WEBRTC & DATA ENGINE ------------------
         let myPeer = null;
         let activeMediaCall = null;
         let activeDataConn = null;
-        let p2pConnections = {}; // Fast map of persistent peer connections for 0ms instant text/media
+        let p2pConnections = {}; // Persistent DataChannels for instant messaging
         let localStream = null;
         let activeCallPeer = null;
         let isVideoCallActive = false;
-        let callActiveState = "IDLE"; // IDLE | CALLING | RINGING | CONNECTED
-        let isCallActiveOrConnecting = false; // Prevents duplicate call offer loops
+        let callActiveState = "IDLE";
+        let isCallActiveOrConnecting = false;
         let callTimerInterval = null;
         let callSeconds = 0;
         let ringAudioTimer = null;
@@ -1311,7 +1300,6 @@
             return "wa_vcall_" + username.toLowerCase().replace(/[^a-z0-9]/g, "_");
         }
 
-        // Persistent 0ms WebSocket signaling & direct data channel routing
         function initPeerSocket() {
             if (myPeer) myPeer.destroy();
 
@@ -1326,12 +1314,12 @@
                 }
             });
 
-            // 1. Instant Incoming Message / Control Data Channels
+            // 1. Inbound Instant DataChannels (Instant Messages, Reactions, Deletes)
             myPeer.on("connection", (conn) => {
                 setupDataConnectionListeners(conn);
             });
 
-            // 2. Instant Incoming Calls (0ms Handshake with call locking)
+            // 2. Inbound Instant Audio / Video Calls
             myPeer.on("call", (mediaCall) => {
                 if (callActiveState !== "IDLE" || isCallActiveOrConnecting) {
                     mediaCall.close();
@@ -1370,7 +1358,7 @@
             conn.on("data", async (payload) => {
                 if (!payload || !payload.type) return;
 
-                // Call Control Signals
+                // Call control signals
                 if (payload.type === "CALL_DECLINED") {
                     handleInstantCallDeclined();
                     return;
@@ -1379,7 +1367,7 @@
                     return;
                 }
 
-                // Delete For Everyone Instant Reflection
+                // Delete For Everyone
                 if (payload.type === "control_delete") {
                     await markLocalMessageDeleted(payload.msgId);
                     const targetEl = document.getElementById(payload.msgId);
@@ -1390,7 +1378,7 @@
                     return;
                 }
 
-                // Read Receipt Instant Reflection
+                // Read Receipt
                 if (payload.type === "control_read") {
                     await updateLocalMessageStatus(payload.msgId, "read");
                     const targetEl = document.getElementById(payload.msgId);
@@ -1404,7 +1392,13 @@
                     return;
                 }
 
-                // Instant Incoming Message (Text, Voice Note, Image, Video, Document)
+                // Delivery ACK
+                if (payload.type === "msg_ack") {
+                    await updateLocalMessageStatus(payload.msgId, "delivered");
+                    return;
+                }
+
+                // Instant Incoming Message
                 const isChatting = activeRecipient && payload.sender.toLowerCase() === activeRecipient.toLowerCase();
                 const msgRecord = {
                     id: payload.id,
@@ -1421,12 +1415,18 @@
 
                 await saveLocalMessage(msgRecord);
 
+                // Acknowledge receipt
+                try {
+                    conn.send({ type: "msg_ack", msgId: msgRecord.id });
+                    if (isChatting) {
+                        conn.send({ type: "control_read", msgId: msgRecord.id });
+                    }
+                } catch (e) {}
+
                 if (isChatting) {
                     renderBubble(msgRecord);
                     const box = document.getElementById("msgBox");
                     box.scrollTop = box.scrollHeight;
-                    // Send instant read receipt back over data channel
-                    conn.send({ type: "control_read", msgId: msgRecord.id });
                 }
 
                 triggerNotification(msgRecord.id, msgRecord.sender, msgRecord.content);
@@ -1452,17 +1452,24 @@
             }
 
             return new Promise((resolve) => {
+                if (!myPeer || myPeer.destroyed) return resolve(null);
+                
                 const conn = myPeer.connect(targetPeerId, { reliable: true });
                 setupDataConnectionListeners(conn);
                 
-                const timeout = setTimeout(() => {
-                    resolve(null); // Fall back if peer is offline or network blocks P2P
-                }, 1800);
+                const timer = setTimeout(() => {
+                    resolve(null);
+                }, 1200);
 
                 conn.on("open", () => {
-                    clearTimeout(timeout);
+                    clearTimeout(timer);
                     p2pConnections[targetPeerId] = conn;
                     resolve(conn);
+                });
+
+                conn.on("error", () => {
+                    clearTimeout(timer);
+                    resolve(null);
                 });
             });
         }
@@ -1631,7 +1638,6 @@
             }
         }
 
-        // ------------------ WHATSAPP AUDIO TONES ------------------
         function playWhatsAppTone(type) {
             stopRingtone();
             try {
@@ -2046,11 +2052,9 @@
 
                 const targetPeerId = getPeerId(activeCallPeer);
 
-                // Establish direct signaling data link for instant reject/end
                 activeDataConn = myPeer.connect(targetPeerId);
                 setupDataConnectionListeners(activeDataConn);
 
-                // Establish direct audio/video media call
                 activeMediaCall = myPeer.call(targetPeerId, localStream, {
                     metadata: { callerName: currentUser, isVideo: isVideo }
                 });
@@ -2091,7 +2095,6 @@
                     document.getElementById("callAvatarStage").style.display = "none";
                 }
 
-                // Instant Answer via WebRTC
                 activeMediaCall.answer(localStream);
 
                 activeMediaCall.on("stream", (remoteStream) => {
@@ -2115,7 +2118,7 @@
                 const conn = p2pConnections[targetPeerId] || activeDataConn;
                 if (conn && conn.open) {
                     const signal = (callActiveState === "RINGING") ? "CALL_DECLINED" : "CALL_ENDED";
-                    conn.send({ type: signal });
+                    try { conn.send({ type: signal }); } catch (e) {}
                 }
             }
 
@@ -2259,7 +2262,7 @@
             }
         }
 
-        // ------------------ INSTANT MESSAGING ENGINE (DUAL-PATH) ------------------
+        // ------------------ DUAL-PATH INSTANT MESSAGING ENGINE ------------------
         async function sendTextMessage() {
             const inp = document.getElementById("chatMessageInput");
             const val = inp.value.trim();
@@ -2299,7 +2302,7 @@
             reader.readAsDataURL(file);
         }
 
-        // Transmit in 0ms over DataConnection, fallback to Google Sheets Queue if offline
+        // Transmit via DataChannel if active, automatically fall back to Google Sheets Queue
         async function dispatchInstantPayload(dataObj) {
             const msgId = "MSG_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
             const timestamp = Date.now();
@@ -2325,26 +2328,30 @@
                 isDeleted: false
             };
 
-            // 1. Commit immediately to local database & render
+            // 1. Immediately write to sender's local IndexedDB and render
             await saveLocalMessage(localRecord);
             renderBubble(localRecord);
             const box = document.getElementById("msgBox");
             box.scrollTop = box.scrollHeight;
 
-            // 2. Try instant 0ms transmission over peer DataChannel
-            let sentDirect = false;
-            try {
-                const conn = await getOrEstablishP2PConnection(activeRecipient);
-                if (conn && conn.open) {
-                    conn.send(fullPayload);
-                    sentDirect = true;
+            // 2. Transmit via DataConnection if size is safe (<64KB) and channel is open
+            let deliveredP2P = false;
+            const approxSize = (dataObj.fileData ? dataObj.fileData.length : 0) + (dataObj.content ? dataObj.content.length : 0);
+
+            if (approxSize < 64000) {
+                try {
+                    const conn = await getOrEstablishP2PConnection(activeRecipient);
+                    if (conn && conn.open) {
+                        conn.send(fullPayload);
+                        deliveredP2P = true;
+                    }
+                } catch (err) {
+                    deliveredP2P = false;
                 }
-            } catch (err) {
-                sentDirect = false;
             }
 
-            // 3. Fallback to Google Sheets Queue if recipient is offline / closed
-            if (!sentDirect) {
+            // 3. Fallback: Post to Google Sheets Inbox_Queue if peer is offline or payload is large
+            if (!deliveredP2P) {
                 fetch(SCRIPT_URL, {
                     method: "POST",
                     body: JSON.stringify({
@@ -2372,16 +2379,18 @@
                 el.innerHTML = `This message was deleted <div class="msg-meta">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`;
             }
 
-            // Transmit delete signal instantly over DataChannel
-            let sentDirect = false;
+            // Broadcast delete over DataChannel
+            let deliveredP2P = false;
             const conn = p2pConnections[getPeerId(targetMsg.recipient)];
             if (conn && conn.open) {
-                conn.send({ type: "control_delete", msgId: targetMsg.id });
-                sentDirect = true;
+                try {
+                    conn.send({ type: "control_delete", msgId: targetMsg.id });
+                    deliveredP2P = true;
+                } catch (e) {}
             }
 
-            // Fallback to queue if peer is offline
-            if (!sentDirect) {
+            // Queue fallback
+            if (!deliveredP2P) {
                 fetch(SCRIPT_URL, {
                     method: "POST",
                     body: JSON.stringify({
