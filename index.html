@@ -662,18 +662,26 @@
             justify-content: center;
         }
 
-        .send-fab {
-            width: 44px;
-            height: 44px;
-            background: var(--wa-teal);
-            border: none;
-            border-radius: 50%;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+    .send-fab {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;       /* Prevents horizontal compression */
+    min-height: 44px;      /* Prevents vertical compression */
+    flex-shrink: 0;        /* Tells flexbox never to crush this button */
+    aspect-ratio: 1 / 1;   /* Guarantees a 1:1 circular ratio */
+    background: var(--wa-teal);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
+        .action-icon {
+    flex-shrink: 0;
+    /* other existing properties... */
+}
 
         /* Action / Context Menu Sheet */
         .action-sheet {
