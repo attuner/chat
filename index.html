@@ -7,12 +7,10 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>WhatsApp Web</title>
 
-    <!-- PWA Manifest & Meta Tags -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#008069">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- iOS PWA Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WhatsApp">
@@ -39,8 +37,7 @@
             font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        html,
-        body {
+        html, body {
             height: 100%;
             height: 100dvh;
             width: 100%;
@@ -72,7 +69,6 @@
             fill: currentColor;
         }
 
-        /* Spinner for Buttons */
         .btn-spinner {
             display: inline-block;
             width: 20px;
@@ -138,11 +134,6 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-        }
-
-        .auth-box button:disabled {
-            opacity: 0.75;
-            cursor: not-allowed;
         }
 
         .toggle-link {
@@ -286,13 +277,8 @@
             border: 2px solid white;
         }
 
-        .online {
-            background: var(--wa-green);
-        }
-
-        .offline {
-            background: var(--wa-tick-gray);
-        }
+        .online { background: var(--wa-green); }
+        .offline { background: var(--wa-tick-gray); }
 
         .contact-info {
             flex: 1;
@@ -311,13 +297,36 @@
             color: var(--wa-text-primary);
         }
 
+        .contact-time {
+            font-size: 12px;
+            color: var(--wa-text-secondary);
+        }
+
+        .contact-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+        }
+
         .contact-sub {
             font-size: 15px;
             color: var(--wa-text-secondary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-top: 3px;
+            max-width: 260px;
+        }
+
+        .unread-badge {
+            background: var(--wa-green);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 12px;
+            padding: 2px 7px;
+            min-width: 20px;
+            text-align: center;
         }
 
         .typing-text {
@@ -378,6 +387,23 @@
             opacity: 0.85;
         }
 
+        .call-icons {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-right: 4px;
+        }
+
+        .call-btn-nav {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .msg-box {
             flex: 1 1 auto;
             min-height: 0;
@@ -401,20 +427,9 @@
             user-select: none;
         }
 
-        .bubble.outgoing {
-            align-self: flex-end;
-            background: var(--wa-bubble-out);
-        }
-
-        .bubble.incoming {
-            align-self: flex-start;
-            background: var(--wa-bubble-in);
-        }
-
-        .bubble.deleted {
-            font-style: italic;
-            color: #8696a0;
-        }
+        .bubble.outgoing { align-self: flex-end; background: var(--wa-bubble-out); }
+        .bubble.incoming { align-self: flex-start; background: var(--wa-bubble-in); }
+        .bubble.deleted { font-style: italic; color: #8696a0; }
 
         .msg-meta {
             display: inline-flex;
@@ -433,14 +448,8 @@
             font-size: 13px;
             letter-spacing: -1px;
         }
-
-        .ticks.read {
-            color: var(--wa-tick-blue);
-        }
-
-        .ticks.sent {
-            color: var(--wa-tick-gray);
-        }
+        .ticks.read { color: var(--wa-tick-blue); }
+        .ticks.sent { color: var(--wa-tick-gray); }
 
         .media-container {
             position: relative;
@@ -574,7 +583,6 @@
             text-overflow: ellipsis;
         }
 
-        /* Footer Controls */
         .chat-bottom {
             flex-shrink: 0;
             background: #f0f2f5;
@@ -705,48 +713,94 @@
             justify-content: center;
         }
 
-        /* Action / Context Menu Sheet */
-        .action-sheet {
+        /* WebRTC Call Modal */
+        .call-modal {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.4);
+            background: #111b21;
+            z-index: 300;
             display: none;
-            align-items: flex-end;
-            z-index: 99;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 40px 20px;
+            color: white;
         }
 
-        .action-sheet-body {
-            width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 16px 16px 0 0;
-            padding: 16px 20px;
+        .call-user-info {
+            text-align: center;
             display: flex;
             flex-direction: column;
+            align-items: center;
             gap: 12px;
         }
 
-        .sheet-btn {
-            padding: 14px;
-            background: none;
-            border: none;
-            font-size: 17px;
-            text-align: left;
-            cursor: pointer;
-            border-radius: 8px;
+        .call-avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: #dfe5e7;
+            color: #54656f;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            font-size: 38px;
+            font-weight: bold;
         }
 
-        .sheet-btn:active {
-            background: #f0f2f5;
+        .call-title { font-size: 24px; font-weight: 600; }
+        .call-status { font-size: 16px; opacity: 0.8; }
+
+        .call-video-container {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            margin: 20px 0;
+            display: none;
+            border-radius: 12px;
+            overflow: hidden;
+            background: black;
         }
 
-        .sheet-btn.danger {
-            color: #ea4335;
+        #remoteVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
+
+        #localVideo {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            width: 95px;
+            height: 135px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 2px solid white;
+            background: #222;
+        }
+
+        .call-actions {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .call-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .call-btn.accept { background: #25d366; }
+        .call-btn.reject { background: #ea4335; }
 
         /* Full Screen Preview Modal */
         .preview-modal {
@@ -785,26 +839,44 @@
             padding: 12px;
         }
 
-        .preview-content img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
+        .preview-content img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .preview-content video { max-width: 100%; max-height: 100%; border-radius: 8px; outline: none; }
+        .preview-content iframe { width: 100%; height: 100%; background: white; border: none; border-radius: 8px; }
+
+        .action-sheet {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            align-items: flex-end;
+            z-index: 99;
         }
 
-        .preview-content video {
-            max-width: 100%;
-            max-height: 100%;
-            border-radius: 8px;
-            outline: none;
-        }
-
-        .preview-content iframe {
+        .action-sheet-body {
             width: 100%;
-            height: 100%;
+            max-width: 480px;
+            margin: 0 auto;
             background: white;
-            border: none;
-            border-radius: 8px;
+            border-radius: 16px 16px 0 0;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
+
+        .sheet-btn {
+            padding: 14px;
+            background: none;
+            border: none;
+            font-size: 17px;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sheet-btn.danger { color: #ea4335; }
 
         .progress-line {
             position: absolute;
@@ -823,6 +895,9 @@
 
     <div id="app">
         <div id="uploadProgress" class="progress-line"></div>
+
+        <!-- Hidden Keep-Alive Audio Element for Background Heartbeat -->
+        <audio id="keepAliveAudio" loop preload="auto" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"></audio>
 
         <!-- 1. Authentication View -->
         <div id="authScreen" class="auth-view">
@@ -876,6 +951,15 @@
                         <div class="nav-name" id="chatHeaderName">User</div>
                         <div class="nav-status" id="chatHeaderStatus">offline</div>
                     </div>
+                </div>
+                <!-- WebRTC Voice & Video Call Triggers -->
+                <div class="call-icons">
+                    <button class="call-btn-nav" title="Voice Call" onclick="startCall(false)">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg>
+                    </button>
+                    <button class="call-btn-nav" title="Video Call" onclick="startCall(true)">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                    </button>
                 </div>
             </div>
 
@@ -936,7 +1020,30 @@
             </div>
         </div>
 
-        <!-- Full-Screen Video / Media Preview Modal -->
+        <!-- 4. WebRTC Video/Audio Call Overlay -->
+        <div class="call-modal" id="callModal">
+            <div class="call-user-info">
+                <div class="call-avatar" id="callAvatar">U</div>
+                <div class="call-title" id="callUserName">User</div>
+                <div class="call-status" id="callStatusText">Calling...</div>
+            </div>
+
+            <div class="call-video-container" id="callVideoContainer">
+                <video id="remoteVideo" autoplay playsinline></video>
+                <video id="localVideo" autoplay playsinline muted></video>
+            </div>
+
+            <div class="call-actions">
+                <button class="call-btn accept" id="callAcceptBtn" onclick="answerCall()" style="display: none;">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg>
+                </button>
+                <button class="call-btn reject" onclick="endCall(true)">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Full-Screen Media Preview Modal -->
         <div class="preview-modal" id="previewModal">
             <div class="preview-header">
                 <button class="nav-btn" onclick="closeMediaPreview()">
@@ -950,7 +1057,7 @@
             <div class="preview-content" id="previewMediaContainer"></div>
         </div>
 
-        <!-- Context Action Overlay (Delete for Everyone) -->
+        <!-- Context Action Overlay -->
         <div class="action-sheet" id="actionSheet" onclick="closeActionSheet(event)">
             <div class="action-sheet-body" onclick="event.stopPropagation()">
                 <button class="sheet-btn danger" id="deleteForEveryoneBtn" onclick="executeDeleteForEveryone()">
@@ -979,11 +1086,25 @@
         let recInterval = null;
         let deferredPrompt = null;
         let selectedContextMessage = null;
+        let wakeLock = null;
 
-        // Debounce audio chime: ensure each message plays audio at most once
         const alertedMessageIds = new Set();
 
-        // Cross-tab Synchronization Channel
+        // WebRTC Global State
+        let peerConnection = null;
+        let localStream = null;
+        let activeCallPeer = null;
+        let isVideoCallActive = false;
+        let incomingOfferData = null;
+        let ringtoneTimer = null;
+
+        const rtcConfig = {
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:stun1.l.google.com:19302" }
+            ]
+        };
+
         const tabSyncChannel = new BroadcastChannel("wa_tab_channel");
         tabSyncChannel.onmessage = (event) => {
             const data = event.data;
@@ -1000,7 +1121,6 @@
             }
         };
 
-        // Sync when storage changes in another tab
         window.addEventListener("storage", (e) => {
             if (e.key === "wa_active_user") {
                 if (e.newValue && e.newValue !== currentUser) {
@@ -1019,14 +1139,41 @@
             }
             requestNotificationAccess();
             registerServiceWorker();
+            enableBackgroundKeepAlive();
         };
+
+        // ------------------ BACKGROUND KEEP-ALIVE ENGINE ------------------
+        function enableBackgroundKeepAlive() {
+            // 1. Silent looped audio to prevent mobile browser freezing
+            const audio = document.getElementById("keepAliveAudio");
+            document.addEventListener("click", () => {
+                if (audio && audio.paused) {
+                    audio.play().catch(() => {});
+                }
+                requestWakeLock();
+            }, { once: true });
+
+            // 2. Screen Wake Lock API
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === "visible") {
+                    requestWakeLock();
+                }
+            });
+        }
+
+        async function requestWakeLock() {
+            if ("wakeLock" in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request("screen");
+                } catch (err) {}
+            }
+        }
 
         async function initUserSession() {
             await initIndexedDB(currentUser);
             initializeWhatsApp();
         }
 
-        // ------------------ PER-USER ISOLATED INDEXEDDB ------------------
         function sanitizeDbName(username) {
             return "WhatsAppLocalDB_" + username.toLowerCase().replace(/[^a-z0-9_]/g, "_");
         }
@@ -1117,7 +1264,17 @@
             });
         }
 
-        // ------------------ PWA SERVICE WORKER ------------------
+        function getAllLocalMessages() {
+            return new Promise((resolve, reject) => {
+                if (!db) return resolve([]);
+                const tx = db.transaction("messages", "readonly");
+                const store = tx.objectStore("messages");
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = (e) => reject(e);
+            });
+        }
+
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./sw.js').catch(() => {});
@@ -1140,11 +1297,6 @@
             }
             deferredPrompt = null;
         }
-
-        window.addEventListener('appinstalled', () => {
-            const btn = document.getElementById('pwaInstallBtn');
-            if (btn) btn.style.display = 'none';
-        });
 
         function requestNotificationAccess() {
             if ("Notification" in window && Notification.permission === "default") {
@@ -1169,7 +1321,6 @@
             } catch (e) {}
         }
 
-        // Single trigger: guaranteed only one audio chime and one banner alert per message
         function triggerNotification(msgId, sender, content) {
             if (alertedMessageIds.has(msgId)) return;
             alertedMessageIds.add(msgId);
@@ -1187,7 +1338,39 @@
             }
         }
 
-        // ------------------ AUTHENTICATION & SPINNER ------------------
+        // Ringtone generator for Voice & Video calls
+        function startRingtone() {
+            stopRingtone();
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                ringtoneTimer = setInterval(() => {
+                    const osc1 = ctx.createOscillator();
+                    const osc2 = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc1.frequency.value = 440;
+                    osc2.frequency.value = 480;
+                    osc1.connect(gain);
+                    osc2.connect(gain);
+                    gain.connect(ctx.destination);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    osc1.start();
+                    osc2.start();
+                    setTimeout(() => {
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.8);
+                        osc1.stop(ctx.currentTime + 1.8);
+                        osc2.stop(ctx.currentTime + 1.8);
+                    }, 1800);
+                }, 4000);
+            } catch (e) {}
+        }
+
+        function stopRingtone() {
+            if (ringtoneTimer) {
+                clearInterval(ringtoneTimer);
+                ringtoneTimer = null;
+            }
+        }
+
         function toggleAuthMode() {
             isRegister = !isRegister;
             document.getElementById("authBtn").innerText = isRegister ? "Register" : "Continue";
@@ -1226,7 +1409,6 @@
                     currentUser = data.username;
                     localStorage.setItem("wa_active_user", currentUser);
 
-                    // Broadcast to other open tabs to auto-login simultaneously
                     tabSyncChannel.postMessage({ type: "AUTH_LOGIN", username: currentUser });
 
                     await initUserSession();
@@ -1258,7 +1440,7 @@
             sendLiveHeartbeat();
 
             clearInterval(pollQueueInterval);
-            pollQueueInterval = setInterval(pollAndDrainCloudQueue, 2500);
+            pollQueueInterval = setInterval(pollAndDrainCloudQueue, 2200);
         }
 
         function logout() {
@@ -1284,7 +1466,7 @@
                 const data = await res.json();
                 if (data.status === "success") {
                     cachedUserList = data.users;
-                    renderUserDirectory();
+                    await renderUserDirectory();
 
                     if (activeRecipient) {
                         const u = cachedUserList.find(x => x.username.toLowerCase() === activeRecipient.toLowerCase());
@@ -1294,12 +1476,39 @@
             } catch (e) { }
         }
 
-        function renderUserDirectory() {
+        // ------------------ UNREAD COUNTS & LATEST CHAT SORTING ------------------
+        async function renderUserDirectory() {
             const list = document.getElementById("chatsListContainer");
             const q = document.getElementById("userSearchInput").value.toLowerCase();
             list.innerHTML = "";
 
-            cachedUserList
+            const allMsgs = await getAllLocalMessages();
+
+            // Calculate unread count and latest message timestamp per user
+            const userStats = {};
+            allMsgs.forEach(m => {
+                const partner = m.chatWith;
+                if (!userStats[partner]) {
+                    userStats[partner] = { lastTimestamp: 0, unreadCount: 0, lastMessage: "" };
+                }
+                if (m.timestamp > userStats[partner].lastTimestamp) {
+                    userStats[partner].lastTimestamp = m.timestamp;
+                    userStats[partner].lastMessage = m.type === "text" ? m.content : `[${m.type}]`;
+                }
+                // If message received by current user and unread
+                if (m.recipient.toLowerCase() === currentUser.toLowerCase() && m.status !== "read") {
+                    userStats[partner].unreadCount++;
+                }
+            });
+
+            // Sort user list: most recent messages on top
+            const sortedList = [...cachedUserList].sort((a, b) => {
+                const timeA = userStats[a.username.toLowerCase()]?.lastTimestamp || 0;
+                const timeB = userStats[b.username.toLowerCase()]?.lastTimestamp || 0;
+                return timeB - timeA;
+            });
+
+            sortedList
                 .filter(u => u.username.toLowerCase().includes(q))
                 .forEach(u => {
                     const li = document.createElement("li");
@@ -1308,7 +1517,11 @@
 
                     const initial = u.username.charAt(0).toUpperCase();
                     const stateClass = u.isOnline ? "online" : "offline";
-                    const subtitle = u.isTyping ? '<span class="typing-text">typing...</span>' : escapeHtml(u.about);
+                    const stat = userStats[u.username.toLowerCase()] || { lastTimestamp: 0, unreadCount: 0, lastMessage: "" };
+                    
+                    const timeStr = stat.lastTimestamp ? new Date(stat.lastTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                    const subtitle = u.isTyping ? '<span class="typing-text">typing...</span>' : (stat.lastMessage ? escapeHtml(stat.lastMessage) : escapeHtml(u.about));
+                    const unreadBadge = stat.unreadCount > 0 ? `<span class="unread-badge">${stat.unreadCount}</span>` : '';
 
                     li.innerHTML = `
                         <div class="avatar-wrap">
@@ -1318,8 +1531,12 @@
                         <div class="contact-info">
                             <div class="contact-top">
                                 <span class="contact-name">${escapeHtml(u.username)}</span>
+                                <span class="contact-time">${timeStr}</span>
                             </div>
-                            <div class="contact-sub">${subtitle}</div>
+                            <div class="contact-bottom">
+                                <div class="contact-sub">${subtitle}</div>
+                                ${unreadBadge}
+                            </div>
                         </div>
                     `;
                     list.appendChild(li);
@@ -1337,9 +1554,14 @@
 
             updateChatHeaderState(userObj);
 
-            // Load from user's isolated local database
+            // Mark all received messages as read
             const localHistory = await getLocalMessages(activeRecipient);
-            localHistory.forEach(renderBubble);
+            for (let m of localHistory) {
+                if (m.recipient.toLowerCase() === currentUser.toLowerCase() && m.status !== "read") {
+                    await updateLocalMessageStatus(m.id, "read");
+                }
+                renderBubble(m);
+            }
             const box = document.getElementById("msgBox");
             box.scrollTop = box.scrollHeight;
         }
@@ -1365,7 +1587,7 @@
             fetchDirectory();
         }
 
-        // ------------------ CLOUD QUEUE & DEDUPLICATED SYNC ------------------
+        // ------------------ CLOUD QUEUE & WEBRTC SIGNALING ------------------
         async function pollAndDrainCloudQueue() {
             if (!currentUser) return;
             try {
@@ -1377,6 +1599,21 @@
 
                     for (const msg of data.messages) {
                         deliveredIds.push(msg.id);
+
+                        // WebRTC Signals
+                        if (msg.type === "call_offer") {
+                            handleIncomingCallOffer(msg);
+                            continue;
+                        } else if (msg.type === "call_answer") {
+                            handleIncomingCallAnswer(msg);
+                            continue;
+                        } else if (msg.type === "call_ice") {
+                            handleIncomingIceCandidate(msg);
+                            continue;
+                        } else if (msg.type === "call_end") {
+                            endCall(false);
+                            continue;
+                        }
 
                         if (msg.type === "control_delete") {
                             await markLocalMessageDeleted(msg.content);
@@ -1401,28 +1638,31 @@
                             continue;
                         }
 
-                        msg.status = "read";
+                        // Normal Message
+                        const isCurrentlyChatting = activeRecipient && msg.sender.toLowerCase() === activeRecipient.toLowerCase();
+                        msg.status = isCurrentlyChatting ? "read" : "delivered";
                         await saveLocalMessage(msg);
 
-                        if (activeRecipient && msg.sender.toLowerCase() === activeRecipient.toLowerCase()) {
+                        if (isCurrentlyChatting) {
                             renderBubble(msg);
                             const box = document.getElementById("msgBox");
                             box.scrollTop = box.scrollHeight;
                         }
 
-                        // Play sound and trigger banner alert exactly once
                         triggerNotification(msg.id, msg.sender, msg.content);
 
-                        fetch(SCRIPT_URL, {
-                            method: "POST",
-                            body: JSON.stringify({
-                                action: "dispatchMessage",
-                                sender: currentUser,
-                                recipient: msg.sender,
-                                type: "control_read",
-                                content: msg.id
-                            })
-                        }).catch(() => {});
+                        if (isCurrentlyChatting) {
+                            fetch(SCRIPT_URL, {
+                                method: "POST",
+                                body: JSON.stringify({
+                                    action: "dispatchMessage",
+                                    sender: currentUser,
+                                    recipient: msg.sender,
+                                    type: "control_read",
+                                    content: msg.id
+                                })
+                            }).catch(() => {});
+                        }
                     }
 
                     await fetch(SCRIPT_URL, {
@@ -1432,6 +1672,11 @@
                             messageIds: deliveredIds
                         })
                     });
+
+                    // Refresh directory unread count and latest message sorting
+                    if (document.getElementById("directoryScreen").style.display === "flex") {
+                        await renderUserDirectory();
+                    }
                 }
             } catch (e) { }
         }
@@ -1520,7 +1765,161 @@
             bubble.innerHTML = `${body} <div class="msg-meta">${time} ${ticks}</div>`;
         }
 
-        // Full-Screen Preview Modal
+        // ------------------ WEBRTC VOICE & VIDEO CALLING ENGINE ------------------
+        async function startCall(isVideo) {
+            if (!activeRecipient) return;
+            activeCallPeer = activeRecipient;
+            isVideoCallActive = isVideo;
+
+            openCallModal(activeCallPeer, isVideo ? "Video Calling..." : "Voice Calling...", false);
+            startRingtone();
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo });
+                document.getElementById("localVideo").srcObject = localStream;
+                if (isVideo) document.getElementById("callVideoContainer").style.display = "block";
+
+                peerConnection = new RTCPeerConnection(rtcConfig);
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                peerConnection.ontrack = (event) => {
+                    document.getElementById("remoteVideo").srcObject = event.streams[0];
+                    stopRingtone();
+                    document.getElementById("callStatusText").innerText = "Connected";
+                };
+
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        sendSignalingPacket("call_ice", JSON.stringify(event.candidate));
+                    }
+                };
+
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                sendSignalingPacket("call_offer", JSON.stringify({ sdp: offer, isVideo: isVideo }));
+            } catch (err) {
+                alert("Camera/Microphone permission denied.");
+                endCall(true);
+            }
+        }
+
+        function handleIncomingCallOffer(msg) {
+            activeCallPeer = msg.sender;
+            incomingOfferData = JSON.parse(msg.content);
+            isVideoCallActive = incomingOfferData.isVideo;
+
+            startRingtone();
+            openCallModal(activeCallPeer, `Incoming ${isVideoCallActive ? 'Video' : 'Voice'} Call`, true);
+
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(`Incoming Call from ${activeCallPeer}`, {
+                    body: `Tap to answer ${isVideoCallActive ? 'video' : 'voice'} call`,
+                    icon: "icon-192.png",
+                    tag: "call_alert"
+                });
+            }
+        }
+
+        async function answerCall() {
+            stopRingtone();
+            document.getElementById("callAcceptBtn").style.display = "none";
+            document.getElementById("callStatusText").innerText = "Connecting...";
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideoCallActive });
+                document.getElementById("localVideo").srcObject = localStream;
+                if (isVideoCallActive) document.getElementById("callVideoContainer").style.display = "block";
+
+                peerConnection = new RTCPeerConnection(rtcConfig);
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                peerConnection.ontrack = (event) => {
+                    document.getElementById("remoteVideo").srcObject = event.streams[0];
+                    document.getElementById("callStatusText").innerText = "Connected";
+                };
+
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        sendSignalingPacket("call_ice", JSON.stringify(event.candidate));
+                    }
+                };
+
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(incomingOfferData.sdp));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+
+                sendSignalingPacket("call_answer", JSON.stringify(answer));
+            } catch (err) {
+                alert("Camera/Mic access error.");
+                endCall(true);
+            }
+        }
+
+        async function handleIncomingCallAnswer(msg) {
+            stopRingtone();
+            const answer = JSON.parse(msg.content);
+            if (peerConnection) {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                document.getElementById("callStatusText").innerText = "Connected";
+            }
+        }
+
+        async function handleIncomingIceCandidate(msg) {
+            const candidate = JSON.parse(msg.content);
+            if (peerConnection && peerConnection.remoteDescription) {
+                try {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                } catch (e) {}
+            }
+        }
+
+        function endCall(notifyPeer = true) {
+            stopRingtone();
+            if (notifyPeer && activeCallPeer) {
+                sendSignalingPacket("call_end", "ended");
+            }
+
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+
+            if (localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+                localStream = null;
+            }
+
+            document.getElementById("remoteVideo").srcObject = null;
+            document.getElementById("localVideo").srcObject = null;
+            document.getElementById("callModal").style.display = "none";
+            document.getElementById("callVideoContainer").style.display = "none";
+            activeCallPeer = null;
+            incomingOfferData = null;
+        }
+
+        function openCallModal(username, statusText, isIncoming) {
+            document.getElementById("callUserName").innerText = username;
+            document.getElementById("callAvatar").innerText = username.charAt(0).toUpperCase();
+            document.getElementById("callStatusText").innerText = statusText;
+            document.getElementById("callAcceptBtn").style.display = isIncoming ? "flex" : "none";
+            document.getElementById("callModal").style.display = "flex";
+        }
+
+        function sendSignalingPacket(type, content) {
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "dispatchMessage",
+                    sender: currentUser,
+                    recipient: activeCallPeer,
+                    type: type,
+                    content: content
+                })
+            }).catch(() => {});
+        }
+
+        // ------------------ PREVIEW & FILE UTILITIES ------------------
         function showMediaPreview(url, type, filename) {
             const container = document.getElementById("previewMediaContainer");
             document.getElementById("previewFilename").innerText = filename;
@@ -1558,7 +1957,6 @@
             document.body.removeChild(a);
         }
 
-        // Context Sheet Handlers
         function openActionSheet(msg, isMine) {
             if (msg.isDeleted) return;
             selectedContextMessage = msg;
@@ -1677,7 +2075,7 @@
             }
         }
 
-        // Layout handling for mobile viewport
+        // Viewport height management
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 const app = document.getElementById('app');
