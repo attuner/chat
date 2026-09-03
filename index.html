@@ -16,6 +16,9 @@
     <meta name="apple-mobile-web-app-title" content="WhatsApp">
     <link rel="apple-touch-icon" href="icon-192.png">
 
+    <!-- High-Speed Real-Time WebRTC Engine (Eliminates Google Sheet signaling delays) -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
     <style>
         :root {
             --wa-teal: #008069;
@@ -48,6 +51,7 @@
             font-size: 16px;
         }
 
+        /* Auto-fit for tablet devices like iPad Mini (up to 820px) and phones */
         #app {
             display: flex;
             flex-direction: column;
@@ -144,6 +148,11 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+        }
+
+        .auth-box button:disabled {
+            opacity: 0.75;
+            cursor: not-allowed;
         }
 
         .toggle-link {
@@ -726,7 +735,7 @@
             justify-content: center;
         }
 
-        /* ---------------- WHATSAPP AUTHENTIC CALL MODAL ---------------- */
+        /* ---------------- WHATSAPP CALL OVERLAY ---------------- */
         .call-modal {
             position: fixed;
             inset: 0;
@@ -800,7 +809,6 @@
             z-index: 2;
         }
 
-        /* Video Call Stage */
         .call-video-container {
             position: absolute;
             inset: 0;
@@ -831,7 +839,6 @@
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
         }
 
-        /* In-Call Functional Bottom Sheet */
         .call-controls-bar {
             display: flex;
             flex-direction: column;
@@ -903,7 +910,6 @@
             color: #cfd9df;
         }
 
-        /* Full Screen Preview Modal */
         .preview-modal {
             position: fixed;
             inset: 0;
@@ -1053,10 +1059,10 @@
                     </div>
                 </div>
                 <div class="call-icons">
-                    <button class="call-btn-nav" title="Voice Call" onclick="initiateWhatsAppCall(false)">
+                    <button class="call-btn-nav" title="Voice Call" onclick="initiateInstantCall(false)">
                         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg>
                     </button>
-                    <button class="call-btn-nav" title="Video Call" onclick="initiateWhatsAppCall(true)">
+                    <button class="call-btn-nav" title="Video Call" onclick="initiateInstantCall(true)">
                         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
                     </button>
                 </div>
@@ -1119,32 +1125,27 @@
             </div>
         </div>
 
-        <!-- 4. Real WhatsApp Calling / In-Call Overlay -->
+        <!-- 4. WhatsApp Full-Screen Call Stage -->
         <div class="call-modal" id="callModal">
-            <!-- Background Full Video (Video Calls) -->
             <div class="call-video-container" id="callVideoContainer">
                 <video id="remoteVideo" autoplay playsinline></video>
                 <video id="localVideo" autoplay playsinline muted></video>
             </div>
 
-            <!-- Call Info Header -->
             <div class="call-header-meta">
                 <div class="call-type-indicator">
                     <svg class="svg-icon" id="callTypeIcon" style="width: 16px; height: 16px;" viewBox="0 0 24 24"></svg>
-                    <span id="callTypeLabel">WHATSAPP VIDEO</span>
+                    <span id="callTypeLabel">WHATSAPP CALL</span>
                 </div>
                 <div class="call-title" id="callUserName">User</div>
                 <div class="call-status" id="callStatusText">Ringing...</div>
             </div>
 
-            <!-- Avatar Wave Stage (Voice / Connecting) -->
             <div class="call-avatar-stage" id="callAvatarStage">
                 <div class="call-avatar" id="callAvatar">U</div>
             </div>
 
-            <!-- Interactive In-Call Control Dock -->
             <div class="call-controls-bar">
-                <!-- Media Toggles (Mute / Cam / Flip) -->
                 <div class="mid-call-toggles" id="midCallToggles">
                     <button class="toggle-btn" id="muteAudioBtn" onclick="toggleAudioMute()" title="Mute Microphone">
                         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
@@ -1157,19 +1158,16 @@
                     </button>
                 </div>
 
-                <!-- Answer / Decline Actions -->
                 <div class="call-actions-row">
-                    <!-- Incoming Answer Button -->
                     <div class="call-action-wrapper" id="answerActionWrap" style="display: none;">
-                        <button class="call-circle-btn accept" onclick="answerIncomingCall()">
+                        <button class="call-circle-btn accept" onclick="answerCallInstant()">
                             <svg class="svg-icon" style="width: 32px; height: 32px;" viewBox="0 0 24 24"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg>
                         </button>
                         <span>Accept</span>
                     </div>
 
-                    <!-- Hangup / Reject Button -->
                     <div class="call-action-wrapper" id="rejectActionWrap">
-                        <button class="call-circle-btn reject" onclick="terminateCall(true)">
+                        <button class="call-circle-btn reject" onclick="endCallInstant(true)">
                             <svg class="svg-icon" style="width: 32px; height: 32px;" viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
                         </button>
                         <span id="rejectActionLabel">Decline</span>
@@ -1225,26 +1223,20 @@
 
         const alertedMessageIds = new Set();
 
-        // ------------------ ADVANCED WEBRTC CALLING ENGINE ------------------
-        let peerConnection = null;
+        // ------------------ INSTANT WEBRTC ENGINE (PEERJS) ------------------
+        let myPeer = null;
+        let activeMediaCall = null;
+        let activeDataConn = null;
         let localStream = null;
         let activeCallPeer = null;
         let isVideoCallActive = false;
         let callActiveState = "IDLE"; // IDLE | CALLING | RINGING | CONNECTED
-        let incomingOfferData = null;
         let callTimerInterval = null;
         let callSeconds = 0;
         let ringAudioTimer = null;
-        let currentFacingMode = "user"; // "user" (front) or "environment" (back)
+        let currentFacingMode = "user";
         let isMicMuted = false;
         let isCamDisabled = false;
-
-        const rtcConfig = {
-            iceServers: [
-                { urls: "stun:stun.l.google.com:19302" },
-                { urls: "stun:stun1.l.google.com:19302" }
-            ]
-        };
 
         const tabSyncChannel = new BroadcastChannel("wa_tab_channel");
         tabSyncChannel.onmessage = (event) => {
@@ -1310,6 +1302,65 @@
         async function initUserSession() {
             await initIndexedDB(currentUser);
             initializeWhatsApp();
+            initPeerSocket();
+        }
+
+        // Initialize persistent real-time socket connection for 0ms call handshakes
+        function initPeerSocket() {
+            if (myPeer) myPeer.destroy();
+
+            // Sanitize Peer ID matching user identity
+            const peerId = "wa_vcall_" + currentUser.toLowerCase().replace(/[^a-z0-9]/g, "_");
+            myPeer = new Peer(peerId, {
+                debug: 1,
+                config: {
+                    iceServers: [
+                        { urls: "stun:stun.l.google.com:19302" },
+                        { urls: "stun:stun1.l.google.com:19302" }
+                    ]
+                }
+            });
+
+            // Instant Incoming Call listener (Fires in 0ms directly over WebSocket)
+            myPeer.on("call", (mediaCall) => {
+                if (callActiveState !== "IDLE") {
+                    mediaCall.close();
+                    return;
+                }
+
+                activeMediaCall = mediaCall;
+                activeCallPeer = mediaCall.metadata?.callerName || "User";
+                isVideoCallActive = !!mediaCall.metadata?.isVideo;
+                callActiveState = "RINGING";
+
+                setupCallUi(activeCallPeer, isVideoCallActive, "INCOMING");
+                document.getElementById("callStatusText").innerText = isVideoCallActive ? "Incoming Video Call..." : "Incoming Voice Call...";
+                playWhatsAppTone("RINGTONE");
+
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification(`WhatsApp ${isVideoCallActive ? 'Video' : 'Voice'} Call`, {
+                        body: `${activeCallPeer} is calling...`,
+                        icon: "icon-192.png",
+                        tag: "call_alert"
+                    });
+                }
+
+                mediaCall.on("close", () => {
+                    handleInstantCallEnded();
+                });
+            });
+
+            // Instant Data Channel for 0ms Hangup / Decline signals
+            myPeer.on("connection", (conn) => {
+                activeDataConn = conn;
+                conn.on("data", (data) => {
+                    if (data.type === "CALL_DECLINED") {
+                        handleInstantCallDeclined();
+                    } else if (data.type === "CALL_ENDED") {
+                        handleInstantCallEnded();
+                    }
+                });
+            });
         }
 
         function sanitizeDbName(username) {
@@ -1476,14 +1527,13 @@
             }
         }
 
-        // ------------------ WHATSAPP AUDIO TONE ENGINE ------------------
+        // ------------------ WHATSAPP AUDIO TONES ------------------
         function playWhatsAppTone(type) {
             stopRingtone();
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
 
                 if (type === "RINGBACK") {
-                    // Outgoing US/WhatsApp ringback tone (440Hz + 480Hz, 2s ON, 3s OFF)
                     const playBeat = () => {
                         const osc1 = ctx.createOscillator();
                         const osc2 = ctx.createOscillator();
@@ -1502,7 +1552,6 @@
                     playBeat();
                     ringAudioTimer = setInterval(playBeat, 4500);
                 } else if (type === "RINGTONE") {
-                    // Melodic incoming WhatsApp style chime
                     const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 659.25];
                     const playMelody = () => {
                         notes.forEach((freq, idx) => {
@@ -1521,7 +1570,6 @@
                     playMelody();
                     ringAudioTimer = setInterval(playMelody, 2800);
                 } else if (type === "BUSY") {
-                    // 3 Rapid beeps (Call Ended / Busy)
                     [0, 0.25, 0.5].forEach(delay => {
                         const osc = ctx.createOscillator();
                         const gain = ctx.createGain();
@@ -1788,7 +1836,7 @@
             fetchDirectory();
         }
 
-        // ------------------ CLOUD QUEUE & WEBRTC CALL ENGINE ------------------
+        // ------------------ CLOUD QUEUE POLLING ------------------
         async function pollAndDrainCloudQueue() {
             if (!currentUser) return;
             try {
@@ -1800,34 +1848,6 @@
 
                     for (const msg of data.messages) {
                         deliveredIds.push(msg.id);
-
-                        // Call Signaling Flow
-                        if (msg.type === "call_offer") {
-                            if (callActiveState !== "IDLE") {
-                                // Busy reply if already in another call
-                                sendSignalingPacket("call_busy", "User busy", msg.sender);
-                                continue;
-                            }
-                            handleIncomingWhatsAppCall(msg);
-                            continue;
-                        } else if (msg.type === "call_ringing") {
-                            if (callActiveState === "CALLING") {
-                                document.getElementById("callStatusText").innerText = "Ringing...";
-                            }
-                            continue;
-                        } else if (msg.type === "call_answer") {
-                            handleCallAnswerAccepted(msg);
-                            continue;
-                        } else if (msg.type === "call_ice") {
-                            handleIncomingIceCandidate(msg);
-                            continue;
-                        } else if (msg.type === "call_busy" || msg.type === "call_reject") {
-                            handleCallRejectedByPeer(msg.content);
-                            continue;
-                        } else if (msg.type === "call_end") {
-                            terminateCall(false);
-                            continue;
-                        }
 
                         if (msg.type === "control_delete") {
                             await markLocalMessageDeleted(msg.content);
@@ -1852,7 +1872,6 @@
                             continue;
                         }
 
-                        // Regular Message
                         const isCurrentlyChatting = activeRecipient && msg.sender.toLowerCase() === activeRecipient.toLowerCase();
                         msg.status = isCurrentlyChatting ? "read" : "delivered";
                         await saveLocalMessage(msg);
@@ -1894,8 +1913,8 @@
             } catch (e) { }
         }
 
-        // ------------------ WHATSAPP CALLING IMPLEMENTATION ------------------
-        async function initiateWhatsAppCall(isVideo) {
+        // ------------------ INSTANT CALL DISPATCH & HANDSHAKE ------------------
+        async function initiateInstantCall(isVideo) {
             if (!activeRecipient) return;
             activeCallPeer = activeRecipient;
             isVideoCallActive = isVideo;
@@ -1917,53 +1936,37 @@
                     document.getElementById("callAvatarStage").style.display = "none";
                 }
 
-                peerConnection = new RTCPeerConnection(rtcConfig);
-                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                const targetPeerId = "wa_vcall_" + activeCallPeer.toLowerCase().replace(/[^a-z0-9]/g, "_");
 
-                peerConnection.ontrack = (event) => {
-                    document.getElementById("remoteVideo").srcObject = event.streams[0];
-                    startActiveCallTimer();
-                };
-
-                peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        sendSignalingPacket("call_ice", JSON.stringify(event.candidate), activeCallPeer);
-                    }
-                };
-
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-
-                sendSignalingPacket("call_offer", JSON.stringify({ sdp: offer, isVideo: isVideo }), activeCallPeer);
-            } catch (err) {
-                alert("Microphone / Camera access error. Please grant browser permissions.");
-                terminateCall(true);
-            }
-        }
-
-        function handleIncomingWhatsAppCall(msg) {
-            activeCallPeer = msg.sender;
-            incomingOfferData = JSON.parse(msg.content);
-            isVideoCallActive = incomingOfferData.isVideo;
-            callActiveState = "RINGING";
-
-            setupCallUi(activeCallPeer, isVideoCallActive, "INCOMING");
-            document.getElementById("callStatusText").innerText = isVideoCallActive ? "Incoming Video Call..." : "Incoming Voice Call...";
-            playWhatsAppTone("RINGTONE");
-
-            // Acknowledge to caller that destination device is ringing
-            sendSignalingPacket("call_ringing", "ringing", activeCallPeer);
-
-            if ("Notification" in window && Notification.permission === "granted") {
-                new Notification(`WhatsApp ${isVideoCallActive ? 'Video' : 'Voice'} Call`, {
-                    body: `${activeCallPeer} is calling...`,
-                    icon: "icon-192.png",
-                    tag: "call_invite"
+                // Establish high-speed signaling data link for instant reject/end
+                activeDataConn = myPeer.connect(targetPeerId);
+                activeDataConn.on("data", (data) => {
+                    if (data.type === "CALL_DECLINED") handleInstantCallDeclined();
+                    else if (data.type === "CALL_ENDED") handleInstantCallEnded();
                 });
+
+                // Establish direct audio/video media call
+                activeMediaCall = myPeer.call(targetPeerId, localStream, {
+                    metadata: { callerName: currentUser, isVideo: isVideo }
+                });
+
+                // Connected instantly once answered by recipient
+                activeMediaCall.on("stream", (remoteStream) => {
+                    document.getElementById("remoteVideo").srcObject = remoteStream;
+                    startActiveCallTimer();
+                });
+
+                activeMediaCall.on("close", () => {
+                    handleInstantCallEnded();
+                });
+
+            } catch (err) {
+                alert("Microphone / Camera access error. Please allow permissions.");
+                endCallInstant(true);
             }
         }
 
-        async function answerIncomingCall() {
+        async function answerCallInstant() {
             stopRingtone();
             callActiveState = "CONNECTED";
 
@@ -1983,72 +1986,33 @@
                     document.getElementById("callAvatarStage").style.display = "none";
                 }
 
-                peerConnection = new RTCPeerConnection(rtcConfig);
-                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                // Instant Answer via WebRTC socket
+                activeMediaCall.answer(localStream);
 
-                peerConnection.ontrack = (event) => {
-                    document.getElementById("remoteVideo").srcObject = event.streams[0];
+                activeMediaCall.on("stream", (remoteStream) => {
+                    document.getElementById("remoteVideo").srcObject = remoteStream;
                     startActiveCallTimer();
-                };
+                });
 
-                peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        sendSignalingPacket("call_ice", JSON.stringify(event.candidate), activeCallPeer);
-                    }
-                };
-
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(incomingOfferData.sdp));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-
-                sendSignalingPacket("call_answer", JSON.stringify(answer), activeCallPeer);
             } catch (err) {
                 alert("Microphone / Camera access denied.");
-                terminateCall(true);
+                endCallInstant(true);
             }
         }
 
-        async function handleCallAnswerAccepted(msg) {
-            stopRingtone();
-            callActiveState = "CONNECTED";
-            const answer = JSON.parse(msg.content);
-
-            if (peerConnection) {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-                startActiveCallTimer();
-            }
-        }
-
-        async function handleIncomingIceCandidate(msg) {
-            const candidate = JSON.parse(msg.content);
-            if (peerConnection && peerConnection.remoteDescription) {
-                try {
-                    await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-                } catch (e) {}
-            }
-        }
-
-        function handleCallRejectedByPeer(reason) {
-            stopRingtone();
-            playWhatsAppTone("BUSY");
-            document.getElementById("callStatusText").innerText = "Call Declined";
-            setTimeout(() => {
-                terminateCall(false);
-            }, 1800);
-        }
-
-        function terminateCall(notifyPeer = true) {
+        function endCallInstant(isInitiator = true) {
             stopRingtone();
             clearInterval(callTimerInterval);
 
-            if (notifyPeer && activeCallPeer) {
-                const signal = (callActiveState === "RINGING") ? "call_reject" : "call_end";
-                sendSignalingPacket(signal, "ended", activeCallPeer);
+            // Send instant WebSocket event to remote peer so they disconnect immediately
+            if (isInitiator && activeDataConn && activeDataConn.open) {
+                const signal = (callActiveState === "RINGING") ? "CALL_DECLINED" : "CALL_ENDED";
+                activeDataConn.send({ type: signal });
             }
 
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
+            if (activeMediaCall) {
+                activeMediaCall.close();
+                activeMediaCall = null;
             }
 
             if (localStream) {
@@ -2065,16 +2029,32 @@
 
             callActiveState = "IDLE";
             activeCallPeer = null;
-            incomingOfferData = null;
             isMicMuted = false;
             isCamDisabled = false;
+        }
+
+        function handleInstantCallDeclined() {
+            stopRingtone();
+            playWhatsAppTone("BUSY");
+            document.getElementById("callStatusText").innerText = "Call Declined";
+            setTimeout(() => {
+                endCallInstant(false);
+            }, 1200);
+        }
+
+        function handleInstantCallEnded() {
+            stopRingtone();
+            playWhatsAppTone("BUSY");
+            document.getElementById("callStatusText").innerText = "Call Ended";
+            setTimeout(() => {
+                endCallInstant(false);
+            }, 1200);
         }
 
         function setupCallUi(peerUsername, isVideo, direction) {
             document.getElementById("callUserName").innerText = peerUsername;
             document.getElementById("callAvatar").innerText = peerUsername.charAt(0).toUpperCase();
 
-            // Type icons
             const iconSvg = isVideo 
                 ? '<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>'
                 : '<path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/>';
@@ -2158,27 +2138,16 @@
                     localStream.removeTrack(videoTrack);
                     localStream.addTrack(newVideoTrack);
 
-                    const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === "video");
-                    if (sender) sender.replaceTrack(newVideoTrack);
+                    if (activeMediaCall && activeMediaCall.peerConnection) {
+                        const sender = activeMediaCall.peerConnection.getSenders().find(s => s.track && s.track.kind === "video");
+                        if (sender) sender.replaceTrack(newVideoTrack);
+                    }
 
                     document.getElementById("localVideo").srcObject = localStream;
                 } catch (e) {
                     alert("Unable to switch camera.");
                 }
             }
-        }
-
-        function sendSignalingPacket(type, content, targetPeer) {
-            fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({
-                    action: "dispatchMessage",
-                    sender: currentUser,
-                    recipient: targetPeer,
-                    type: type,
-                    content: content
-                })
-            }).catch(() => {});
         }
 
         // ------------------ PREVIEW & FILE UTILITIES ------------------
