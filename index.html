@@ -72,6 +72,21 @@
             fill: currentColor;
         }
 
+        /* Spinner for Buttons */
+        .btn-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         /* Auth Screen */
         .auth-view {
             flex: 1;
@@ -110,7 +125,8 @@
         }
 
         .auth-box button {
-            padding: 16px;
+            min-height: 54px;
+            padding: 14px;
             background: var(--wa-teal);
             color: white;
             border: none;
@@ -118,6 +134,15 @@
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .auth-box button:disabled {
+            opacity: 0.75;
+            cursor: not-allowed;
         }
 
         .toggle-link {
@@ -643,7 +668,7 @@
         .chat-input {
             flex: 1;
             min-height: 44px;
-            padding: 6px 3px;
+            padding: 12px 18px;
             border: none;
             border-radius: 22px;
             font-size: 17px;
@@ -663,23 +688,22 @@
             flex-shrink: 0;
         }
 
-    .send-fab {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;       /* Prevents horizontal compression */
-    min-height: 44px;      /* Prevents vertical compression */
-    flex-shrink: 0;        /* Tells flexbox never to crush this button */
-    aspect-ratio: 1 / 1;   /* Guarantees a 1:1 circular ratio */
-    background: var(--wa-teal);
-    border: none;
-    border-radius: 50%;
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    }
-        
+        .send-fab {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            min-height: 44px;
+            flex-shrink: 0;
+            aspect-ratio: 1 / 1;
+            background: var(--wa-teal);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
         /* Action / Context Menu Sheet */
         .action-sheet {
@@ -956,17 +980,62 @@
         let deferredPrompt = null;
         let selectedContextMessage = null;
 
+        // Debounce audio chime: ensure each message plays audio at most once
+        const alertedMessageIds = new Set();
+
+        // Cross-tab Synchronization Channel
+        const tabSyncChannel = new BroadcastChannel("wa_tab_channel");
+        tabSyncChannel.onmessage = (event) => {
+            const data = event.data;
+            if (data.type === "AUTH_LOGIN") {
+                if (currentUser !== data.username) {
+                    currentUser = data.username;
+                    localStorage.setItem("wa_active_user", currentUser);
+                    initUserSession();
+                }
+            } else if (data.type === "AUTH_LOGOUT") {
+                currentUser = "";
+                localStorage.removeItem("wa_active_user");
+                location.reload();
+            }
+        };
+
+        // Sync when storage changes in another tab
+        window.addEventListener("storage", (e) => {
+            if (e.key === "wa_active_user") {
+                if (e.newValue && e.newValue !== currentUser) {
+                    currentUser = e.newValue;
+                    initUserSession();
+                } else if (!e.newValue && currentUser) {
+                    currentUser = "";
+                    location.reload();
+                }
+            }
+        });
+
         window.onload = async () => {
-            await initIndexedDB();
-            if (currentUser) initializeWhatsApp();
+            if (currentUser) {
+                await initUserSession();
+            }
             requestNotificationAccess();
             registerServiceWorker();
         };
 
-        // ------------------ LOCAL INDEXEDDB DATABASE ------------------
-        function initIndexedDB() {
+        async function initUserSession() {
+            await initIndexedDB(currentUser);
+            initializeWhatsApp();
+        }
+
+        // ------------------ PER-USER ISOLATED INDEXEDDB ------------------
+        function sanitizeDbName(username) {
+            return "WhatsAppLocalDB_" + username.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+        }
+
+        function initIndexedDB(username) {
             return new Promise((resolve, reject) => {
-                const req = indexedDB.open("WhatsAppLocalDB", 2);
+                if (!username) return resolve(null);
+                const dbName = sanitizeDbName(username);
+                const req = indexedDB.open(dbName, 1);
                 req.onupgradeneeded = (e) => {
                     const database = e.target.result;
                     if (!database.objectStoreNames.contains("messages")) {
@@ -984,6 +1053,7 @@
 
         function saveLocalMessage(msg) {
             return new Promise((resolve, reject) => {
+                if (!db) return resolve();
                 const tx = db.transaction("messages", "readwrite");
                 const store = tx.objectStore("messages");
                 const chatWith = (msg.sender.toLowerCase() === currentUser.toLowerCase())
@@ -998,6 +1068,7 @@
 
         function updateLocalMessageStatus(msgId, status) {
             return new Promise((resolve, reject) => {
+                if (!db) return resolve();
                 const tx = db.transaction("messages", "readwrite");
                 const store = tx.objectStore("messages");
                 const req = store.get(msgId);
@@ -1014,6 +1085,7 @@
 
         function markLocalMessageDeleted(msgId) {
             return new Promise((resolve, reject) => {
+                if (!db) return resolve();
                 const tx = db.transaction("messages", "readwrite");
                 const store = tx.objectStore("messages");
                 const req = store.get(msgId);
@@ -1032,6 +1104,7 @@
 
         function getLocalMessages(withUser) {
             return new Promise((resolve, reject) => {
+                if (!db) return resolve([]);
                 const tx = db.transaction("messages", "readonly");
                 const store = tx.objectStore("messages");
                 const idx = store.index("chatPair");
@@ -1096,23 +1169,40 @@
             } catch (e) {}
         }
 
-        function triggerNotification(sender, content) {
+        // Single trigger: guaranteed only one audio chime and one banner alert per message
+        function triggerNotification(msgId, sender, content) {
+            if (alertedMessageIds.has(msgId)) return;
+            alertedMessageIds.add(msgId);
+
             playAlertTone();
+
             if ("Notification" in window && Notification.permission === "granted") {
                 if (document.hidden || activeRecipient !== sender) {
                     new Notification(`New message from ${sender}`, {
                         body: content || "Sent an attachment",
-                        icon: "icon-192.png"
+                        icon: "icon-192.png",
+                        tag: msgId
                     });
                 }
             }
         }
 
-        // ------------------ AUTHENTICATION ------------------
+        // ------------------ AUTHENTICATION & SPINNER ------------------
         function toggleAuthMode() {
             isRegister = !isRegister;
             document.getElementById("authBtn").innerText = isRegister ? "Register" : "Continue";
             document.getElementById("authToggle").innerText = isRegister ? "Have an account? Sign In" : "No account? Register now";
+        }
+
+        function setAuthBtnLoading(isLoading) {
+            const btn = document.getElementById("authBtn");
+            if (isLoading) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="btn-spinner"></span> Processing...`;
+            } else {
+                btn.disabled = false;
+                btn.innerText = isRegister ? "Register" : "Continue";
+            }
         }
 
         async function submitAuth() {
@@ -1120,8 +1210,10 @@
             const p = document.getElementById("authPassword").value.trim();
             if (!u || !p) return alert("All fields are required");
 
+            setAuthBtnLoading(true);
             setProgress(50);
             const action = isRegister ? "register" : "login";
+
             try {
                 const res = await fetch(SCRIPT_URL, {
                     method: "POST",
@@ -1129,17 +1221,23 @@
                 });
                 const data = await res.json();
                 setProgress(100);
+
                 if (data.status === "success") {
                     currentUser = data.username;
                     localStorage.setItem("wa_active_user", currentUser);
-                    initializeWhatsApp();
+
+                    // Broadcast to other open tabs to auto-login simultaneously
+                    tabSyncChannel.postMessage({ type: "AUTH_LOGIN", username: currentUser });
+
+                    await initUserSession();
                     requestNotificationAccess();
                 } else {
-                    alert(data.message || "Failed authentication");
+                    alert(data.message || "Authentication failed");
                 }
             } catch (e) {
                 alert("Network or script error");
             } finally {
+                setAuthBtnLoading(false);
                 setTimeout(() => setProgress(0), 300);
             }
         }
@@ -1164,6 +1262,7 @@
         }
 
         function logout() {
+            tabSyncChannel.postMessage({ type: "AUTH_LOGOUT" });
             localStorage.removeItem("wa_active_user");
             location.reload();
         }
@@ -1238,7 +1337,7 @@
 
             updateChatHeaderState(userObj);
 
-            // Load and display local history
+            // Load from user's isolated local database
             const localHistory = await getLocalMessages(activeRecipient);
             localHistory.forEach(renderBubble);
             const box = document.getElementById("msgBox");
@@ -1266,7 +1365,7 @@
             fetchDirectory();
         }
 
-        // ------------------ CLOUD QUEUE & SYNC ENGINE ------------------
+        // ------------------ CLOUD QUEUE & DEDUPLICATED SYNC ------------------
         async function pollAndDrainCloudQueue() {
             if (!currentUser) return;
             try {
@@ -1280,7 +1379,6 @@
                         deliveredIds.push(msg.id);
 
                         if (msg.type === "control_delete") {
-                            // Target message deleted remotely
                             await markLocalMessageDeleted(msg.content);
                             const targetEl = document.getElementById(msg.content);
                             if (targetEl) {
@@ -1291,7 +1389,6 @@
                         }
 
                         if (msg.type === "control_read") {
-                            // Target message read acknowledgement
                             await updateLocalMessageStatus(msg.content, "read");
                             const targetEl = document.getElementById(msg.content);
                             if (targetEl) {
@@ -1304,7 +1401,6 @@
                             continue;
                         }
 
-                        // Normal Message: mark read and commit locally
                         msg.status = "read";
                         await saveLocalMessage(msg);
 
@@ -1314,9 +1410,9 @@
                             box.scrollTop = box.scrollHeight;
                         }
 
-                        triggerNotification(msg.sender, msg.content);
+                        // Play sound and trigger banner alert exactly once
+                        triggerNotification(msg.id, msg.sender, msg.content);
 
-                        // Send back Read Receipt signal to original sender
                         fetch(SCRIPT_URL, {
                             method: "POST",
                             body: JSON.stringify({
@@ -1329,7 +1425,6 @@
                         }).catch(() => {});
                     }
 
-                    // Acknowledge receipt to clear the queue
                     await fetch(SCRIPT_URL, {
                         method: "POST",
                         body: JSON.stringify({
@@ -1354,7 +1449,6 @@
 
             bubble.className = `bubble ${isOut ? 'outgoing' : 'incoming'} ${msg.isDeleted ? 'deleted' : ''}`;
             
-            // Long Press / Context Menu for Delete for Everyone
             bubble.oncontextmenu = (e) => {
                 e.preventDefault();
                 openActionSheet(msg, isOut);
@@ -1426,7 +1520,7 @@
             bubble.innerHTML = `${body} <div class="msg-meta">${time} ${ticks}</div>`;
         }
 
-        // Full-Screen Preview Modal (Images, Documents, and Fullscreen Video)
+        // Full-Screen Preview Modal
         function showMediaPreview(url, type, filename) {
             const container = document.getElementById("previewMediaContainer");
             document.getElementById("previewFilename").innerText = filename;
@@ -1482,7 +1576,6 @@
             const targetMsg = selectedContextMessage;
             closeActionSheet();
 
-            // 1. Delete locally
             await markLocalMessageDeleted(targetMsg.id);
             const el = document.getElementById(targetMsg.id);
             if (el) {
@@ -1490,7 +1583,6 @@
                 el.innerHTML = `This message was deleted <div class="msg-meta">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`;
             }
 
-            // 2. Transmit Delete control packet to recipient
             fetch(SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify({
