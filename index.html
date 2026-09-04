@@ -2280,7 +2280,7 @@
 
                 if (data.status === "success") {
                     if (action === "register") {
-                        alert(data.message || "Registration pending admin confirmation in Google Sheets.");
+                        alert(data.message || "Registration pending admin confirmation.");
                     } else {
                         currentUser = data.username;
                         currentTokenVersion = data.tokenVersion || "1";
