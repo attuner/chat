@@ -185,6 +185,7 @@
             flex-direction: column;
             height: 100%;
             background: #ffffff;
+            position: relative;
         }
 
         .directory-header {
@@ -195,12 +196,16 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 16px;
+            position: relative;
+            z-index: 50;
         }
 
         .current-user-card {
             display: flex;
             align-items: center;
             gap: 12px;
+            min-width: 0;
+            flex: 1;
         }
 
         .current-user-avatar {
@@ -215,46 +220,92 @@
             font-size: 18px;
             color: white;
             text-transform: uppercase;
+            flex-shrink: 0;
         }
 
         .current-user-name {
             font-size: 18px;
             font-weight: 600;
             line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .current-user-tag {
             font-size: 13px;
             opacity: 0.85;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .header-actions {
+            position: relative;
             display: flex;
             align-items: center;
-            gap: 8px;
         }
 
-        .header-btn {
-            font-size: 13px;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.18);
-            padding: 6px 10px;
-            border-radius: 6px;
+        .menu-trigger-btn {
+            background: none;
             border: none;
             color: white;
-            font-weight: 600;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .menu-trigger-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 3-Dots Dropdown Menu */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            background: white;
+            min-width: 170px;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            padding: 6px 0;
+            z-index: 100;
+            flex-direction: column;
+        }
+
+        .dropdown-item {
+            padding: 12px 18px;
+            font-size: 15px;
+            color: var(--wa-text-primary);
+            background: none;
+            border: none;
+            text-align: left;
+            width: 100%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.15s ease;
+        }
+
+        .dropdown-item:hover {
+            background: #f5f6f6;
         }
 
         .pwa-install-btn {
             display: none;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
             background: #25d366;
             color: #111b21;
             border: none;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: bold;
-            padding: 6px 12px;
+            padding: 10px 14px;
             border-radius: 6px;
             cursor: pointer;
         }
@@ -666,28 +717,33 @@
             text-overflow: ellipsis;
         }
 
+        /* Fixed Chat Bottom: ensures items stay contained horizontally */
         .chat-bottom {
             flex-shrink: 0;
+            width: 100%;
             background: #f0f2f5;
-            padding: 10px 12px;
-            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            padding: 8px 10px;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             position: relative;
             z-index: 10;
             box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         .recording-panel {
             display: none;
             flex: 1;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             background: white;
             border-radius: 24px;
             padding: 8px 16px;
             animation: fadeIn 0.2s ease-in-out;
+            min-width: 0;
         }
 
         .rec-indicator {
@@ -696,6 +752,7 @@
             border-radius: 50%;
             background: #ea4335;
             animation: blinker 1s infinite alternate;
+            flex-shrink: 0;
         }
 
         @keyframes blinker {
@@ -725,6 +782,7 @@
             align-items: center;
             justify-content: center;
             color: #54656f;
+            flex-shrink: 0;
         }
 
         .attach-popup {
@@ -762,14 +820,16 @@
         }
 
         .chat-input {
-            flex: 1;
-            min-height: 44px;
-            padding: 12px 18px;
+            flex: 1 1 auto;
+            min-width: 0;
+            min-height: 42px;
+            padding: 10px 14px;
             border: none;
-            border-radius: 22px;
-            font-size: 17px;
+            border-radius: 21px;
+            font-size: 16px;
             outline: none;
             background: white;
+            box-sizing: border-box;
         }
 
         .action-icon {
@@ -785,12 +845,11 @@
         }
 
         .send-fab {
-            width: 44px;
-            height: 44px;
-            min-width: 44px;
-            min-height: 44px;
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            min-height: 42px;
             flex-shrink: 0;
-            aspect-ratio: 1 / 1;
             background: var(--wa-teal);
             border: none;
             border-radius: 50%;
@@ -1194,7 +1253,6 @@
                         d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-5.46-4.45-9.92-9.91-9.92zM12.04 20.18c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31c-.82-1.31-1.26-2.83-1.26-4.4 0-4.54 3.7-8.24 8.25-8.24 4.54 0 8.24 3.7 8.24 8.24 0 4.54-3.7 8.26-8.24 8.26z" />
                 </svg>
             </div>
-            <!-- Name of the App -->
             <div class="auth-app-title">WhatsApp Web</div>
             <div class="auth-app-subtitle">Simple. Secure. Reliable messaging.</div>
 
@@ -1204,7 +1262,6 @@
                 <button id="authBtn" onclick="submitAuth()">Continue</button>
                 <div class="toggle-link" id="authToggle" onclick="toggleAuthMode()">No account? Register now</div>
                 
-                <!-- Install PWA Button on the Login Screen -->
                 <button class="pwa-install-btn" id="loginInstallBtn" onclick="installPWA()" style="margin: 0 auto; width: 100%;">
                     <svg class="svg-icon" style="width: 16px; height: 16px;" viewBox="0 0 24 24">
                         <path
@@ -1220,22 +1277,45 @@
             <div class="directory-header">
                 <div class="current-user-card">
                     <div class="current-user-avatar" id="dirUserAvatar">U</div>
-                    <div>
+                    <div style="min-width: 0; overflow: hidden;">
                         <div class="current-user-name" id="dirUserName">User</div>
                         <div class="current-user-tag" id="dirUserStatusTag">Available</div>
                     </div>
                 </div>
+
+                <!-- Three Vertical Dots Menu Trigger & Dropdown -->
                 <div class="header-actions">
-                    <button class="header-btn" onclick="openStatusModal()">Status</button>
-                    <button class="header-btn" onclick="openPasswordModal()">Password</button>
-                    <button class="pwa-install-btn" id="pwaInstallBtn" onclick="installPWA()">
-                        <svg class="svg-icon" style="width: 16px; height: 16px;" viewBox="0 0 24 24">
-                            <path
-                                d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z" />
+                    <button class="menu-trigger-btn" id="menuDotsBtn" onclick="toggleDirectoryMenu(event)" title="Menu">
+                        <svg class="svg-icon" viewBox="0 0 24 24">
+                            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                         </svg>
-                        Install
                     </button>
-                    <span class="header-btn" onclick="logout()">Logout</span>
+                    <div class="dropdown-menu" id="directoryMenu">
+                        <button class="dropdown-item" onclick="openStatusModal(); closeDirectoryMenu();">
+                            <svg class="svg-icon" style="width: 18px; height: 18px; color: var(--wa-text-secondary);" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                            </svg>
+                            Status
+                        </button>
+                        <button class="dropdown-item" onclick="openPasswordModal(); closeDirectoryMenu();">
+                            <svg class="svg-icon" style="width: 18px; height: 18px; color: var(--wa-text-secondary);" viewBox="0 0 24 24">
+                                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                            </svg>
+                            Password
+                        </button>
+                        <button class="dropdown-item" id="pwaInstallBtn" onclick="installPWA(); closeDirectoryMenu();" style="display: none;">
+                            <svg class="svg-icon" style="width: 18px; height: 18px; color: var(--wa-text-secondary);" viewBox="0 0 24 24">
+                                <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
+                            </svg>
+                            Install
+                        </button>
+                        <button class="dropdown-item" onclick="logout(); closeDirectoryMenu();">
+                            <svg class="svg-icon" style="width: 18px; height: 18px; color: #ea4335;" viewBox="0 0 24 24">
+                                <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                            </svg>
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="search-wrapper">
@@ -1350,7 +1430,7 @@
                 </label>
             </div>
 
-            <!-- Input Controls -->
+            <!-- Input Controls: Correctly contained with zero horizontal overflow -->
             <div class="chat-bottom">
                 <button class="action-icon" id="attachToggleBtn" onclick="toggleAttachmentPopup()">
                     <svg class="svg-icon" viewBox="0 0 24 24">
@@ -1478,7 +1558,7 @@
             <div class="preview-content" id="previewMediaContainer"></div>
         </div>
 
-        <!-- Context Action Overlay (Copy, Share, Forward, Delete) -->
+        <!-- Context Action Overlay -->
         <div class="action-sheet" id="actionSheet" onclick="closeActionSheet(event)">
             <div class="action-sheet-body" onclick="event.stopPropagation()">
                 <button class="sheet-btn" onclick="executeCopyMessage()">
@@ -1532,6 +1612,26 @@
         let wakeLock = null;
 
         const alertedMessageIds = new Set();
+
+        // Dropdown Menu Controls
+        function toggleDirectoryMenu(event) {
+            if (event) event.stopPropagation();
+            const menu = document.getElementById("directoryMenu");
+            menu.style.display = (menu.style.display === "flex") ? "none" : "flex";
+        }
+
+        function closeDirectoryMenu() {
+            const menu = document.getElementById("directoryMenu");
+            if (menu) menu.style.display = "none";
+        }
+
+        document.addEventListener("click", (e) => {
+            const menu = document.getElementById("directoryMenu");
+            const btn = document.getElementById("menuDotsBtn");
+            if (menu && menu.style.display === "flex" && !menu.contains(e.target) && !btn.contains(e.target)) {
+                closeDirectoryMenu();
+            }
+        });
 
         // ------------------ REAL-TIME WEBRTC CALLING ENGINE ------------------
         let myPeer = null;
@@ -1709,7 +1809,6 @@
             loadMyUserStatus();
             closeStatusModal();
 
-            // Broadcast heartbeat with updated status/about
             fetch(SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify({
@@ -2001,7 +2100,7 @@
             e.preventDefault();
             deferredPrompt = e;
             const btn = document.getElementById('pwaInstallBtn');
-            if (btn) btn.style.display = 'inline-flex';
+            if (btn) btn.style.display = 'flex';
             const loginBtn = document.getElementById('loginInstallBtn');
             if (loginBtn) loginBtn.style.display = 'inline-flex';
         });
@@ -2438,7 +2537,6 @@
                             continue;
                         }
 
-                        // Normal incoming message
                         const isChatting = activeRecipient && msg.sender.toLowerCase() === activeRecipient.toLowerCase();
                         msg.status = isChatting ? "read" : "delivered";
                         await saveLocalMessage(msg);
@@ -2807,7 +2905,6 @@
             }
         }
 
-        // Delete message from both ends
         async function executeDeleteForEveryone() {
             if (!selectedContextMessage) return;
             const targetMsg = selectedContextMessage;
@@ -2832,7 +2929,6 @@
             }).catch(() => { });
         }
 
-        // Copy Message Content or File Data
         async function executeCopyMessage() {
             if (!selectedContextMessage) return;
             const msg = selectedContextMessage;
@@ -2859,7 +2955,6 @@
             }
         }
 
-        // Share message to other apps on the device
         async function executeShareToDevice() {
             if (!selectedContextMessage) return;
             const msg = selectedContextMessage;
@@ -2879,7 +2974,6 @@
             }
         }
 
-        // Forward message to another contact within the app
         function openShareContactModal() {
             if (!selectedContextMessage) return;
             closeActionSheet();
