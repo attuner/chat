@@ -1354,6 +1354,14 @@
         <div class="modal-overlay" id="shareContactModal">
             <div class="modal-card">
                 <h3>Forward to contact</h3>
+                <input 
+                    type="text" 
+                    id="shareContactSearchInput" 
+                    class="search-input" 
+                    placeholder="Search contact..." 
+                    oninput="filterShareContacts()" 
+                    autocomplete="off" 
+                />
                 <ul class="contacts-picker-list" id="shareContactsList"></ul>
                 <div class="modal-actions">
                     <button class="modal-btn secondary" onclick="closeShareContactModal()">Cancel</button>
@@ -2976,12 +2984,29 @@
 
         function openShareContactModal() {
             if (!selectedContextMessage) return;
-            closeActionSheet();
-            const modal = document.getElementById("shareContactModal");
+            document.getElementById("actionSheet").style.display = "none";
+            
+            const searchInput = document.getElementById("shareContactSearchInput");
+            if (searchInput) searchInput.value = ""; // Reset search input on open
+            
+            renderShareContactsList(""); // Populate list with all contacts
+            document.getElementById("shareContactModal").style.display = "flex";
+        }
+
+        function renderShareContactsList(query = "") {
             const list = document.getElementById("shareContactsList");
             list.innerHTML = "";
 
-            cachedUserList.forEach(u => {
+            const filtered = cachedUserList.filter(u => 
+                u.username.toLowerCase().includes(query.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<li style="padding: 14px; text-align: center; color: var(--wa-text-secondary); font-size: 14px;">No contacts found</li>`;
+                return;
+            }
+
+            filtered.forEach(u => {
                 const li = document.createElement("li");
                 li.className = "chat-row";
                 li.onclick = () => executeForwardToUser(u.username);
@@ -2995,18 +3020,26 @@
                 `;
                 list.appendChild(li);
             });
+        }
 
-            modal.style.display = "flex";
+        function filterShareContacts() {
+            const q = document.getElementById("shareContactSearchInput").value.trim();
+            renderShareContactsList(q);
         }
 
         function closeShareContactModal() {
             document.getElementById("shareContactModal").style.display = "none";
+            selectedContextMessage = null;
         }
 
         async function executeForwardToUser(targetUser) {
-            closeShareContactModal();
-            if (!selectedContextMessage || !targetUser) return;
+            if (!selectedContextMessage || !targetUser) {
+                closeShareContactModal();
+                return;
+            }
+            
             const msg = selectedContextMessage;
+            closeShareContactModal();
 
             await dispatchMessagePayload({
                 type: msg.type,
